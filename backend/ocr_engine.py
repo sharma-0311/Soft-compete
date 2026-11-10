@@ -10,19 +10,29 @@ Handles Indian names, standard date formats, weights, heights, and clubs.
 import io
 import re
 from typing import List, Dict, Any, Optional, Tuple
-from PIL import Image, ImageEnhance
-import numpy as np
+
+try:
+    from PIL import Image, ImageEnhance
+except ImportError:
+    Image = None
+    ImageEnhance = None
+
+try:
+    import numpy as np
+except ImportError:
+    np = None
 
 try:
     from rapidocr_onnxruntime import RapidOCR
     _ocr_engine = RapidOCR()
 except Exception as e:
     _ocr_engine = None
-    print(f"Warning: RapidOCR initialization deferred: {e}")
 
 
-def preprocess_image(image_bytes: bytes) -> np.ndarray:
+def preprocess_image(image_bytes: bytes):
     """Preprocess image for better OCR extraction (contrast enhancement & resizing)."""
+    if Image is None or np is None:
+        raise RuntimeError("Image processing libraries (PIL/numpy) are not installed.")
     pil_img = Image.open(io.BytesIO(image_bytes)).convert("RGB")
 
     # Resize if excessive
