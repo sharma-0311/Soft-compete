@@ -1,0 +1,88 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --radius: 0.5rem;
+    --background: oklch(98.5% 0.002 250);
+    --foreground: oklch(24% 0.02 260);
+    --card: oklch(100% 0 0);
+    --card-foreground: oklch(24% 0.02 260);
+    --popover: oklch(100% 0 0);
+    --popover-foreground: oklch(24% 0.02 260);
+    --primary: oklch(36% 0.075 255);
+    --primary-foreground: oklch(99% 0 0);
+    --secondary: oklch(95.5% 0.006 250);
+    --secondary-foreground: oklch(32% 0.04 255);
+    --muted: oklch(95.5% 0.006 250);
+    --muted-foreground: oklch(52% 0.02 260);
+    --accent: oklch(94% 0.015 230);
+    --accent-foreground: oklch(30% 0.05 250);
+    --destructive: oklch(55% 0.2 25);
+    --destructive-foreground: oklch(99% 0 0);
+    --border: oklch(90% 0.005 250);
+    --input: oklch(87% 0.006 250);
+    --ring: oklch(55% 0.09 240);
+    --success: oklch(52% 0.13 155);
+    --warning: oklch(62% 0.13 75);
+    --male: oklch(50% 0.12 250);
+    --female: oklch(52% 0.16 350);
+    --div-subjr: oklch(60% 0.13 75);
+    --div-cadet: oklch(50% 0.12 165);
+    --div-junior: oklch(48% 0.12 250);
+    --div-senior: oklch(55% 0.16 25);
+    --gradient-hero: linear-gradient(120deg, oklch(36% 0.075 255 / 0.08), transparent 60%);
+  }
+
+  .dark {
+    --background: oklch(16% 0.012 260);
+    --foreground: oklch(96% 0.005 260);
+    --card: oklch(20.5% 0.014 260);
+    --card-foreground: oklch(96% 0.005 260);
+    --popover: oklch(22% 0.014 260);
+    --popover-foreground: oklch(96% 0.005 260);
+    --primary: oklch(62% 0.11 240);
+    --primary-foreground: oklch(99% 0 0);
+    --secondary: oklch(27% 0.016 260);
+    --secondary-foreground: oklch(96% 0.005 260);
+    --muted: oklch(25% 0.014 260);
+    --muted-foreground: oklch(68% 0.015 260);
+    --accent: oklch(30% 0.02 260);
+    --accent-foreground: oklch(98% 0 0);
+    --destructive: oklch(65% 0.18 25);
+    --destructive-foreground: oklch(99% 0 0);
+    --border: oklch(30% 0.015 260);
+    --input: oklch(32% 0.015 260);
+    --ring: oklch(62% 0.11 240);
+    --success: oklch(72% 0.17 150);
+    --warning: oklch(80% 0.16 80);
+    --male: oklch(65% 0.15 245);
+    --female: oklch(70% 0.17 350);
+    --div-subjr: oklch(78% 0.15 85);
+    --div-cadet: oklch(72% 0.15 150);
+    --div-junior: oklch(68% 0.14 240);
+    --div-senior: oklch(68% 0.18 30);
+    --gradient-hero: linear-gradient(120deg, oklch(62% 0.11 240 / 0.2), transparent 60%);
+  }
+
+  body {
+    background-color: var(--background);
+    color: var(--foreground);
+    font-family: 'Barlow', ui-sans-serif, system-ui, sans-serif;
+  }
+}
+
+@media print {
+  body {
+    background: white !important;
+    color: black !important;
+  }
+  .no-print, [data-no-print] {
+    display: none !important;
+  }
+  @page {
+    size: landscape;
+    margin: 10mm;
+  }
+}
