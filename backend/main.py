@@ -14,7 +14,7 @@ Features:
 
 import io
 from typing import List, Optional, Dict, Any
-from fastapi import FastAPI, UploadFile, File, HTTPException, Depends, Query, Response
+from fastapi import FastAPI, APIRouter, UploadFile, File, HTTPException, Depends, Query, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
@@ -53,12 +53,14 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+api_router = APIRouter()
+
 
 # ============================================================
 # HEALTH & INFO
 # ============================================================
 
-@app.get("/")
+@api_router.get("/")
 def root():
     return {
         "status": "online",
@@ -77,7 +79,7 @@ def root():
     }
 
 
-@app.get("/health")
+@api_router.get("/health")
 def health():
     return root()
 
@@ -87,7 +89,7 @@ def health():
 # DEMO & SAMPLE GENERATOR
 # ============================================================
 
-@app.get("/demo")
+@api_router.get("/demo")
 def run_demo():
     """Returns the 11 athletes from user's entry form notebook, fully categorized."""
     results = categorize_bulk(SAMPLE_ATHLETES)
@@ -103,7 +105,7 @@ class GenerateSampleRequest(BaseModel):
     event_year: int = 2026
 
 
-@app.post("/sample/generate")
+@api_router.post("/sample/generate")
 def generate_sample(req: GenerateSampleRequest):
     """Generate up to 2000 realistic synthetic athletes for testing scale and throughput."""
     count = max(10, min(req.count, 2000))
@@ -120,13 +122,13 @@ def generate_sample(req: GenerateSampleRequest):
 # CATEGORIZATION ENDPOINTS
 # ============================================================
 
-@app.post("/categorize", response_model=CategorizedAthlete)
+@api_router.post("/categorize", response_model=CategorizedAthlete)
 def categorize_one(athlete: AthleteInput):
     """Categorize a single athlete with real-time feedback."""
     return categorize_athlete(athlete)
 
 
-@app.post("/categorize/bulk", response_model=List[CategorizedAthlete])
+@api_router.post("/categorize/bulk", response_model=List[CategorizedAthlete])
 def categorize_many(athletes: List[AthleteInput]):
     """Categorize an array of athletes (tested up to 2000+)."""
     if len(athletes) > 5000:
@@ -138,7 +140,7 @@ def categorize_many(athletes: List[AthleteInput]):
 # FILE UPLOAD (EXCEL & CSV)
 # ============================================================
 
-@app.post("/upload/excel")
+@api_router.post("/upload/excel")
 async def upload_excel(file: UploadFile = File(...)):
     """Upload Excel (.xlsx, .xls) or CSV file with smart column auto-detection."""
     filename = file.filename or "upload.xlsx"
@@ -167,7 +169,7 @@ async def upload_excel(file: UploadFile = File(...)):
 # IMAGE OCR UPLOAD (ENTRY FORM PHOTO)
 # ============================================================
 
-@app.post("/upload/image")
+@api_router.post("/upload/image")
 async def upload_image(file: UploadFile = File(...)):
     """
     Upload entry form image (JPG, PNG, WebP).
@@ -225,7 +227,7 @@ class ExportExcelRequest(BaseModel):
     athletes: List[CategorizedAthlete]
 
 
-@app.post("/export/excel")
+@api_router.post("/export/excel")
 def export_excel(req: ExportExcelRequest):
     """Generate professional, multi-tab styled tournament workbook (.xlsx)."""
     if not req.athletes:
@@ -247,21 +249,21 @@ def export_excel(req: ExportExcelRequest):
 # RULES CONFIGURATION
 # ============================================================
 
-@app.get("/rules")
+@api_router.get("/rules")
 def get_rules():
     """Retrieve active age brackets, weight classes, and height categories."""
     return get_active_rules()
 
 
-@app.post("/rules")
-@app.put("/rules")
+@api_router.post("/rules")
+@api_router.put("/rules")
 def set_rules(new_rules: Dict[str, Any]):
     """Update active tournament categorization rules."""
     updated = update_active_rules(new_rules)
     return {"message": "Rules updated successfully", "rules": updated}
 
 
-@app.post("/rules/reset")
+@api_router.post("/rules/reset")
 def reset_rules():
     """Reset rules to default 2026 federation specifications."""
     default_rules = reset_rules_to_default()
@@ -272,7 +274,7 @@ def reset_rules():
 # DATABASE & MULTI-EVENT PERSISTENCE
 # ============================================================
 
-@app.get("/events")
+@api_router.get("/events")
 def list_events(db: Session = Depends(get_db)):
     """List all saved tournament events."""
     events = get_all_events(db)
@@ -288,13 +290,13 @@ class CreateEventRequest(BaseModel):
     location: Optional[str] = "State Sports Complex"
 
 
-@app.post("/events")
+@api_router.post("/events")
 def add_event(req: CreateEventRequest, db: Session = Depends(get_db)):
     """Create a new tournament event."""
     return create_event(db, name=req.name, event_date=req.event_date, location=req.location or "")
 
 
-@app.get("/events/{event_id}/athletes")
+@api_router.get("/events/{event_id}/athletes")
 def get_event_athletes(event_id: int, db: Session = Depends(get_db)):
     """Retrieve all saved athletes for an event."""
     athletes = get_athletes_from_event(db, event_id)
@@ -310,7 +312,7 @@ class SaveAthletesRequest(BaseModel):
     replace: bool = False
 
 
-@app.post("/events/{event_id}/athletes")
+@api_router.post("/events/{event_id}/athletes")
 def save_event_athletes(event_id: int, req: SaveAthletesRequest, db: Session = Depends(get_db)):
     """Persist categorized athletes into SQLite database for an event."""
     saved_count = save_athletes_to_event(db, event_id, req.athletes, replace=req.replace)
@@ -320,20 +322,25 @@ def save_event_athletes(event_id: int, req: SaveAthletesRequest, db: Session = D
     }
 
 
-@app.delete("/events/{event_id}/athletes")
+@api_router.delete("/events/{event_id}/athletes")
 def clear_athletes(event_id: int, db: Session = Depends(get_db)):
     """Clear all athletes in a specific event."""
     deleted_count = clear_event_athletes(db, event_id)
     return {"message": f"Deleted {deleted_count} athletes"}
 
 
-@app.delete("/athletes/{athlete_id}")
+@api_router.delete("/athletes/{athlete_id}")
 def remove_athlete(athlete_id: int, db: Session = Depends(get_db)):
     """Delete a single athlete by ID."""
     success = delete_athlete(db, athlete_id)
     if not success:
         raise HTTPException(404, "Athlete not found")
     return {"message": "Athlete deleted successfully"}
+
+
+# Mount router to support both root routes and /api/ prefixed routes
+app.include_router(api_router)
+app.include_router(api_router, prefix="/api")
 
 
 if __name__ == "__main__":

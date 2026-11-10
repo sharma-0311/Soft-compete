@@ -2,7 +2,30 @@
  * API Client for Taekwondo Categorizer FastAPI Backend
  */
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+/**
+ * Resolves the backend base URL:
+ * - On server (Vercel): uses internal BACKEND_URL service binding
+ * - On client (Browser): uses relative /api (handled by Vercel edge rewrite or Next.js dev rewrite)
+ * - Explicit override: NEXT_PUBLIC_API_URL if provided
+ */
+export function getApiBase(): string {
+  if (typeof window === "undefined" && process.env.BACKEND_URL) {
+    return `${process.env.BACKEND_URL.replace(/\/+$/, "")}/api`;
+  }
+  if (process.env.NEXT_PUBLIC_API_URL) {
+    return process.env.NEXT_PUBLIC_API_URL.replace(/\/+$/, "");
+  }
+  if (typeof window !== "undefined") {
+    return "/api";
+  }
+  return "http://localhost:8000/api";
+}
+
+export function apiUrl(path: string): string {
+  const base = getApiBase();
+  const cleanPath = path.startsWith("/") ? path : `/${path}`;
+  return `${base}${cleanPath}`;
+}
 
 export interface AthleteInput {
   id?: number;
@@ -67,7 +90,7 @@ export interface TournamentEvent {
 // 1. Health check
 export async function checkBackendHealth(): Promise<boolean> {
   try {
-    const res = await fetch(`${API_BASE}/health`, { cache: "no-store" });
+    const res = await fetch(apiUrl("/health"), { cache: "no-store" });
     return res.ok;
   } catch {
     return false;
@@ -76,14 +99,14 @@ export async function checkBackendHealth(): Promise<boolean> {
 
 // 2. Fetch demo athletes (11 official reference athletes)
 export async function fetchDemo(): Promise<{ total: number; athletes: CategorizedAthlete[] }> {
-  const res = await fetch(`${API_BASE}/demo`, { cache: "no-store" });
+  const res = await fetch(apiUrl("/demo"), { cache: "no-store" });
   if (!res.ok) throw new Error("Failed to fetch demo data");
   return res.json();
 }
 
 // 3. Generate realistic sample athletes (100 to 2000)
 export async function generateSampleAthletes(count: number = 500): Promise<{ total: number; athletes: CategorizedAthlete[] }> {
-  const res = await fetch(`${API_BASE}/sample/generate`, {
+  const res = await fetch(apiUrl("/sample/generate"), {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ count }),
@@ -94,7 +117,7 @@ export async function generateSampleAthletes(count: number = 500): Promise<{ tot
 
 // 4. Single categorize
 export async function categorizeSingle(athlete: AthleteInput): Promise<CategorizedAthlete> {
-  const res = await fetch(`${API_BASE}/categorize`, {
+  const res = await fetch(apiUrl("/categorize"), {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(athlete),
@@ -108,7 +131,7 @@ export async function categorizeSingle(athlete: AthleteInput): Promise<Categoriz
 
 // 5. Bulk categorize
 export async function categorizeBulk(athletes: AthleteInput[]): Promise<CategorizedAthlete[]> {
-  const res = await fetch(`${API_BASE}/categorize/bulk`, {
+  const res = await fetch(apiUrl("/categorize/bulk"), {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(athletes),
@@ -126,7 +149,7 @@ export async function uploadExcel(file: File): Promise<{
 }> {
   const form = new FormData();
   form.append("file", file);
-  const res = await fetch(`${API_BASE}/upload/excel`, {
+  const res = await fetch(apiUrl("/upload/excel"), {
     method: "POST",
     body: form,
   });
@@ -139,7 +162,7 @@ export async function uploadExcel(file: File): Promise<{
 
 // 7. Export multi-sheet Excel (.xlsx)
 export async function exportExcelFile(athletes: CategorizedAthlete[], eventTitle: string = "Taekwondo Championship 2026"): Promise<Blob> {
-  const res = await fetch(`${API_BASE}/export/excel`, {
+  const res = await fetch(apiUrl("/export/excel"), {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ athletes, event_title: eventTitle }),
@@ -150,13 +173,13 @@ export async function exportExcelFile(athletes: CategorizedAthlete[], eventTitle
 
 // 8. Rules API
 export async function fetchRules(): Promise<RulesConfig> {
-  const res = await fetch(`${API_BASE}/rules`, { cache: "no-store" });
+  const res = await fetch(apiUrl("/rules"), { cache: "no-store" });
   if (!res.ok) throw new Error("Failed to fetch rules");
   return res.json();
 }
 
 export async function saveRules(rules: RulesConfig): Promise<RulesConfig> {
-  const res = await fetch(`${API_BASE}/rules`, {
+  const res = await fetch(apiUrl("/rules"), {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(rules),
@@ -167,7 +190,7 @@ export async function saveRules(rules: RulesConfig): Promise<RulesConfig> {
 }
 
 export async function resetRules(): Promise<RulesConfig> {
-  const res = await fetch(`${API_BASE}/rules/reset`, {
+  const res = await fetch(apiUrl("/rules/reset"), {
     method: "POST",
   });
   if (!res.ok) throw new Error("Failed to reset rules");
@@ -177,13 +200,13 @@ export async function resetRules(): Promise<RulesConfig> {
 
 // 9. Events API
 export async function fetchEvents(): Promise<TournamentEvent[]> {
-  const res = await fetch(`${API_BASE}/events`, { cache: "no-store" });
+  const res = await fetch(apiUrl("/events"), { cache: "no-store" });
   if (!res.ok) throw new Error("Failed to fetch events");
   return res.json();
 }
 
 export async function createTournamentEvent(name: string, event_date: string = "2026-10-24", location: string = ""): Promise<TournamentEvent> {
-  const res = await fetch(`${API_BASE}/events`, {
+  const res = await fetch(apiUrl("/events"), {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ name, event_date, location }),
@@ -193,14 +216,14 @@ export async function createTournamentEvent(name: string, event_date: string = "
 }
 
 export async function fetchEventAthletes(eventId: number): Promise<CategorizedAthlete[]> {
-  const res = await fetch(`${API_BASE}/events/${eventId}/athletes`, { cache: "no-store" });
+  const res = await fetch(apiUrl(`/events/${eventId}/athletes`), { cache: "no-store" });
   if (!res.ok) throw new Error("Failed to fetch event athletes");
   const data = await res.json();
   return data.athletes;
 }
 
 export async function saveEventAthletes(eventId: number, athletes: CategorizedAthlete[], replace: boolean = false): Promise<number> {
-  const res = await fetch(`${API_BASE}/events/${eventId}/athletes`, {
+  const res = await fetch(apiUrl(`/events/${eventId}/athletes`), {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ athletes, replace }),
