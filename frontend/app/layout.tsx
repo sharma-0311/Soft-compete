@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Bracket HQ — Taekwondo Athlete Categorization",
-  description: "Real-time tournament categorization with offline fallback, foolproof data entry, and printable weigh-in sheets.",
+  title: "Soft Compete — Taekwondo Tournament Categorization",
+  description: "Tournament categorization, athlete data entry, and printable weigh-in sheets.",
 };
 
 export default function RootLayout({
