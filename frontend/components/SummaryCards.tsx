@@ -100,13 +100,13 @@ function ProgressBar({
   const percent = total > 0 ? (n / total) * 100 : 0;
   return (
     <div>
-      <div className="flex justify-between text-xs">
+      <div className="flex justify-between text-[11px]">
         <span className="font-medium text-muted-foreground">{label}</span>
         <span className="tabular-nums text-foreground font-medium">
           {n} <span className="text-muted-foreground">· {percent.toFixed(0)}%</span>
         </span>
       </div>
-      <div className="mt-1 h-2 overflow-hidden rounded-full bg-muted/90">
+      <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-muted">
         <div className={`h-full rounded-full transition-all ${cls}`} style={{ width: `${percent}%` }} />
       </div>
     </div>
@@ -161,12 +161,12 @@ export const SummaryCards: React.FC<SummaryCardsProps> = ({
   }, [athletes]);
 
   return (
-    <div className="grid gap-3.5 md:grid-cols-[1.35fr_repeat(4,1fr)] print:hidden">
-      {/* 1. Total Athletes Card */}
+    <div className="grid gap-2.5 md:grid-cols-[1.35fr_repeat(4,1fr)] print:hidden">
+      {/* 1. Total Athletes Card (Compact) */}
       <div
         onClick={() => onSelectAgeGroup("All")}
         title="Click to show all athletes across every age division"
-        className={`rounded-xl border p-4 sm:p-5 shadow-xs transition-all cursor-pointer flex flex-col justify-between bg-card ${
+        className={`rounded-xl border p-3 sm:p-3.5 shadow-sm transition-all cursor-pointer flex flex-col justify-between bg-card ${
           selectedAgeGroup === "All"
             ? "border-blue-500/60 dark:border-primary/60 ring-1 ring-blue-500/20"
             : "border-blue-500/35 dark:border-primary/40 hover:border-blue-500/60"
@@ -175,33 +175,31 @@ export const SummaryCards: React.FC<SummaryCardsProps> = ({
         <div>
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-1.5 text-xs font-semibold text-foreground/85 tracking-wide">
-              <Users className="h-4 w-4 text-blue-600 dark:text-primary" />
+              <Users className="h-3.5 w-3.5 text-blue-600 dark:text-primary" />
               <span>Total Athletes</span>
             </div>
             <span
               title={`${stats.categorizedRate}% of athletes matched to an age division`}
-              className="inline-flex items-center gap-1 rounded-full bg-emerald-50 border border-emerald-200 dark:bg-emerald-500/15 dark:border-emerald-500/30 px-2 py-0.5 text-[11px] font-bold text-emerald-700 dark:text-emerald-300 tabular-nums"
+              className="inline-flex items-center gap-1 rounded-full bg-emerald-50 border border-emerald-200 dark:bg-emerald-500/15 dark:border-emerald-500/30 px-2 py-0.5 text-[10px] font-bold text-emerald-700 dark:text-emerald-300 tabular-nums leading-none"
             >
               <span>▲</span>
               <span>{stats.categorizedRate}%</span>
             </span>
           </div>
 
-          <div className="mt-1.5 font-display text-[38px] font-bold leading-none tabular-nums text-foreground">
+          <div className="mt-1 font-display text-[28px] font-bold leading-none tabular-nums text-foreground">
             {total.toLocaleString()}
           </div>
         </div>
 
-        <div className="mt-3.5 space-y-2">
+        <div className="mt-2 space-y-1.5">
           <ProgressBar label="Male" n={stats.maleCount} total={total} cls="bg-blue-600 dark:bg-male" />
           <ProgressBar label="Female" n={stats.femaleCount} total={total} cls="bg-pink-600 dark:bg-female" />
         </div>
 
         {total > 0 && (
-          <div className="mt-3 pt-2 border-t border-border/60 flex items-center justify-between gap-1.5 text-[11px] font-medium text-muted-foreground">
-            <span>
-              {total - stats.unknownCount} assigned categories
-            </span>
+          <div className="mt-2 pt-1.5 border-t border-border/60 flex items-center justify-between gap-1.5 text-[11px] font-medium text-muted-foreground">
+            <span>{total - stats.unknownCount} assigned categories</span>
             {stats.unknownCount > 0 && (
               <span className="inline-flex items-center gap-1 text-warning font-semibold">
                 <AlertTriangle className="h-3 w-3 shrink-0" />
@@ -212,7 +210,7 @@ export const SummaryCards: React.FC<SummaryCardsProps> = ({
         )}
       </div>
 
-      {/* 2. Four Division Cards with Subtle Silhouettes */}
+      {/* 2. Four Compact Division Cards with Subtle Silhouettes */}
       {DIVISIONS.map((div) => {
         const meta = DIVISION_META[div];
         const Icon = meta.Icon;
@@ -230,7 +228,7 @@ export const SummaryCards: React.FC<SummaryCardsProps> = ({
                 ? `Clear ${meta.label} filter and show all athletes`
                 : `Filter athletes table to ${meta.label} division (${divTotal})`
             }
-            className={`relative overflow-hidden rounded-xl border p-4 sm:p-5 shadow-xs transition-all cursor-pointer flex flex-col justify-between ${
+            className={`relative overflow-hidden rounded-xl border p-3 sm:p-3.5 shadow-sm transition-all cursor-pointer flex flex-col justify-between ${
               meta.tintClass
             } ${
               isSelected
@@ -241,42 +239,42 @@ export const SummaryCards: React.FC<SummaryCardsProps> = ({
             {/* Top accent bar */}
             <div className={`absolute inset-x-0 top-0 h-1 ${meta.barClass}`} />
 
-            {/* Taekwondo kicking silhouette watermark on right */}
+            {/* Compact Taekwondo kicking silhouette watermark on right */}
             <TkdKickSilhouette
-              className={`pointer-events-none select-none absolute right-2 bottom-5 h-24 w-24 opacity-85 ${meta.silhouetteClass}`}
+              className={`pointer-events-none select-none absolute right-2 bottom-2.5 h-16 w-16 opacity-85 ${meta.silhouetteClass}`}
             />
 
             <div className="relative z-10">
               <div className="flex items-center justify-between gap-1.5">
-                <div className="flex items-center gap-1.5 font-display text-sm font-bold tracking-wide text-foreground/90">
-                  <Icon className={`h-4 w-4 ${meta.textClass}`} />
+                <div className="flex items-center gap-1.5 font-display text-xs font-bold uppercase tracking-wider text-foreground/90">
+                  <Icon className={`h-3.5 w-3.5 ${meta.textClass}`} />
                   <span>{meta.label}</span>
                 </div>
                 {isSelected && (
-                  <span className="rounded bg-primary/15 px-1.5 py-0.5 text-[10px] font-bold text-primary uppercase">
+                  <span className="rounded bg-primary/15 px-1.5 py-0.5 text-[10px] font-bold text-primary uppercase leading-none">
                     Filtered
                   </span>
                 )}
               </div>
 
-              <div className="mt-2 font-display text-[36px] font-bold leading-none tabular-nums text-foreground">
+              <div className="mt-1 font-display text-[28px] font-bold leading-none tabular-nums text-foreground">
                 {divTotal}
               </div>
             </div>
 
-            <div className="relative z-10 mt-3.5">
-              <div className="flex gap-3 text-xs text-muted-foreground font-semibold">
+            <div className="relative z-10 mt-2.5">
+              <div className="flex gap-3 text-[11px] text-muted-foreground font-semibold">
                 <span className="flex items-center gap-1">
-                  <span className="text-male text-[10px]">●</span>
+                  <span className="text-male text-[9px]">●</span>
                   <span>{counts.M} M</span>
                 </span>
                 <span className="flex items-center gap-1">
-                  <span className="text-female text-[10px]">●</span>
+                  <span className="text-female text-[9px]">●</span>
                   <span>{counts.F} F</span>
                 </span>
               </div>
 
-              <div className="mt-2.5 h-2 overflow-hidden rounded-full bg-muted/90">
+              <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-muted">
                 <div
                   className={`h-full rounded-full transition-all ${meta.barClass}`}
                   style={{ width: `${percent}%` }}

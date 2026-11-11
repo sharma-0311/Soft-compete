@@ -261,11 +261,11 @@ export const AthletesTable: React.FC<AthletesTableProps> = ({
   };
 
   return (
-    <div className="rounded-xl border border-border bg-card shadow-xs print:hidden">
-      {/* 1. Header Toolbar: Division Pill Tabs, Search, Filters, Delete & Export */}
-      <div className="flex flex-wrap items-center gap-2.5 border-b border-border p-3.5">
-        {/* Division Filter Pill Tabs */}
-        <div className="flex flex-wrap items-center gap-1.5">
+    <div className="rounded-xl border border-border bg-card shadow-sm print:hidden">
+      {/* 1. Header Toolbar: Distinct Division Filter Pills, Search, Filters, Delete & Export */}
+      <div className="flex flex-wrap items-center gap-2.5 border-b border-border bg-card p-3.5">
+        {/* Division Filter Segmented Pills */}
+        <div className="inline-flex flex-wrap items-center gap-1 rounded-lg border border-border bg-muted/60 p-1">
           {DIVISIONS.map((div) => {
             const isActive = filterAge === div;
             const count = divisionCounts[div] ?? 0;
@@ -278,10 +278,10 @@ export const AthletesTable: React.FC<AthletesTableProps> = ({
                   setCurrentPage(0);
                 }}
                 title={`Filter roster to ${div === "Sub-Jr" ? "Sub-Junior" : div} athletes (${count})`}
-                className={`h-8 rounded-lg px-3 text-xs font-semibold transition-all flex items-center gap-1.5 ${
+                className={`h-7 rounded-md px-2.5 text-xs font-semibold transition-all flex items-center gap-1.5 border ${
                   isActive
-                    ? "bg-primary text-primary-foreground shadow-xs"
-                    : "bg-muted/75 text-muted-foreground hover:text-foreground hover:bg-muted"
+                    ? "bg-primary border-primary text-primary-foreground shadow-sm"
+                    : "bg-card border-border/70 text-foreground/80 hover:text-foreground hover:bg-background shadow-sm"
                 }`}
               >
                 <span>{div}</span>
@@ -289,7 +289,7 @@ export const AthletesTable: React.FC<AthletesTableProps> = ({
                   className={`rounded px-1.5 py-0.5 text-[11px] tabular-nums leading-none ${
                     isActive
                       ? "bg-primary-foreground/20 text-primary-foreground"
-                      : "text-muted-foreground"
+                      : "bg-muted text-muted-foreground"
                   }`}
                 >
                   {count}
@@ -333,10 +333,10 @@ export const AthletesTable: React.FC<AthletesTableProps> = ({
             type="button"
             onClick={() => setShowFilters((v) => !v)}
             title="Filter athletes by gender or assigned category mode"
-            className={`h-9 px-3 rounded-lg border text-xs font-medium inline-flex items-center gap-1.5 transition-colors shadow-xs ${
+            className={`h-9 px-3 rounded-lg border text-xs font-semibold inline-flex items-center gap-1.5 transition-colors shadow-sm ${
               showFilters || activeExtraFilters > 0
-                ? "border-primary/50 bg-primary/10 text-primary"
-                : "border-border bg-card hover:bg-muted text-foreground"
+                ? "border-primary/60 bg-primary/10 text-primary"
+                : "border-border bg-secondary hover:bg-muted text-foreground"
             }`}
           >
             <Filter className="h-3.5 w-3.5" />
@@ -362,10 +362,10 @@ export const AthletesTable: React.FC<AthletesTableProps> = ({
                 ? `Delete ${selectedKeys.size} selected athlete${selectedKeys.size === 1 ? "" : "s"}`
                 : "Select one or more rows using the checkboxes to enable Delete"
             }
-            className={`h-9 px-3 rounded-lg text-xs font-semibold inline-flex items-center gap-1.5 transition-all ${
+            className={`h-9 px-3 rounded-lg text-xs font-semibold inline-flex items-center gap-1.5 transition-all border ${
               selectedKeys.size > 0
-                ? "bg-destructive text-destructive-foreground hover:bg-destructive/90 shadow-xs"
-                : "border border-border bg-card text-muted-foreground opacity-50 cursor-not-allowed"
+                ? "bg-destructive border-destructive text-destructive-foreground hover:bg-destructive/90 shadow-sm"
+                : "border-border bg-secondary/70 text-muted-foreground opacity-65 cursor-not-allowed"
             }`}
           >
             <Trash2 className="h-3.5 w-3.5" />
@@ -378,7 +378,7 @@ export const AthletesTable: React.FC<AthletesTableProps> = ({
             disabled={athletes.length === 0}
             onClick={onExportExcel}
             title={athletes.length ? "Export categorized multi-sheet Excel (.xlsx)" : "Add athletes first to export Excel"}
-            className="h-9 px-3 rounded-lg border border-border bg-card hover:bg-muted text-xs font-medium text-foreground inline-flex items-center gap-1.5 transition-colors shadow-xs disabled:opacity-50 disabled:cursor-not-allowed"
+            className="h-9 px-3 rounded-lg border border-border bg-secondary hover:bg-muted text-xs font-semibold text-foreground inline-flex items-center gap-1.5 transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <FileSpreadsheet className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
             <span className="hidden sm:inline">Export Excel</span>
@@ -465,7 +465,7 @@ export const AthletesTable: React.FC<AthletesTableProps> = ({
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-border text-left text-xs text-muted-foreground bg-muted/30">
+            <tr className="border-b border-border text-left text-[11px] uppercase tracking-wider font-bold text-muted-foreground bg-muted/75">
               <th className="w-9 px-3 py-2.5">
                 <button
                   type="button"
@@ -857,7 +857,7 @@ export const AthletesTable: React.FC<AthletesTableProps> = ({
                   title={`Go to page ${p + 1}`}
                   className={`h-7 min-w-7 px-2 rounded-md text-xs font-semibold tabular-nums transition-colors ${
                     p === validPage
-                      ? "bg-primary text-primary-foreground shadow-xs"
+                      ? "bg-primary text-primary-foreground shadow-sm"
                       : "text-foreground hover:bg-muted"
                   }`}
                 >

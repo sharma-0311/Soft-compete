@@ -392,7 +392,7 @@ export default function HomePage() {
       {/* Unified Taekwondo Top Hero Artwork Backdrop spanning seamlessly behind Top Bar + Title */}
       <div
         className={`pointer-events-none absolute top-0 inset-x-0 overflow-hidden transition-all ${
-          currentTab === "athletes" ? "h-[225px] sm:h-[215px]" : "h-16"
+          currentTab === "athletes" ? "h-[210px] sm:h-[200px]" : "h-16"
         }`}
       >
         <div className="max-w-[1400px] mx-auto relative h-full">
@@ -400,11 +400,11 @@ export default function HomePage() {
             src="/tkd-hero-banner.jpg"
             alt=""
             aria-hidden="true"
-            className="ml-auto h-full w-full md:w-[75%] lg:w-[62%] object-cover object-[88%_20%] opacity-90 dark:opacity-35"
+            className="ml-auto h-full w-full md:w-[70%] lg:w-[58%] object-cover object-[88%_18%] opacity-60 dark:opacity-25"
           />
         </div>
-        <div className="absolute inset-0 bg-gradient-to-r from-background via-background/95 via-[44%] to-transparent dark:from-background dark:via-background/92 dark:via-[48%] dark:to-background/40" />
-        <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-background via-background/70 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-r from-background via-background/95 via-[48%] to-background/20 dark:from-background dark:via-background/95 dark:via-[50%] dark:to-background/50" />
+        <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-background via-background/75 to-transparent" />
       </div>
 
       {/* 1. Global Navigation Header */}
@@ -462,14 +462,14 @@ export default function HomePage() {
                   </p>
                 </div>
 
-                {/* Right: Operational Action Strip (Add Athletes, Import file, Weigh-in sheet, Clear, More) */}
+                {/* Right: Operational Action Strip (Solid card buttons so labels read sharply over artwork) */}
                 <div className="flex flex-wrap items-center gap-2">
                   {/* 1. Primary Action: Add Athletes */}
                   <button
                     type="button"
                     onClick={() => setShowManualModal(true)}
                     title="Open Add athlete drawer (Single or Quick Grid bulk entry)"
-                    className="h-9 px-4 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 flex items-center gap-2 transition-colors shadow-xs"
+                    className="h-9 px-4 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 flex items-center gap-2 transition-colors shadow-sm"
                   >
                     <UserPlus className="h-4 w-4" />
                     <span>Add Athletes</span>
@@ -480,7 +480,7 @@ export default function HomePage() {
                     type="button"
                     onClick={() => setShowExcelModal(true)}
                     title="Import athletes from Excel (.xlsx) or CSV spreadsheet"
-                    className="h-9 px-3.5 rounded-lg border border-border bg-card/95 backdrop-blur-xs hover:bg-muted text-sm font-medium text-foreground flex items-center gap-2 transition-colors shadow-xs"
+                    className="h-9 px-3.5 rounded-lg border border-border bg-card hover:bg-muted text-sm font-medium text-foreground flex items-center gap-2 transition-colors shadow-sm"
                   >
                     <FileUp className="h-4 w-4 text-muted-foreground" />
                     <span>Import file</span>
@@ -492,7 +492,7 @@ export default function HomePage() {
                     onClick={() => setShowPrintModal(true)}
                     disabled={!athletes.length}
                     title={athletes.length ? "Open printable official weigh-in sheet" : "Add athletes first to print weigh-in sheet"}
-                    className="h-9 px-3.5 rounded-lg border border-border bg-card/95 backdrop-blur-xs hover:bg-muted text-sm font-medium text-foreground flex items-center gap-2 transition-colors shadow-xs disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="h-9 px-3.5 rounded-lg border border-border bg-card hover:bg-muted text-sm font-medium text-foreground flex items-center gap-2 transition-colors shadow-sm disabled:opacity-65 disabled:cursor-not-allowed"
                   >
                     <Printer className="h-4 w-4 text-muted-foreground" />
                     <span>Weigh-in sheet</span>
@@ -504,7 +504,7 @@ export default function HomePage() {
                     onClick={handleClearRoster}
                     disabled={!athletes.length}
                     title={athletes.length ? "Clear all athletes from current roster" : "Roster is already empty"}
-                    className="h-9 px-3 rounded-lg border border-border bg-card/95 backdrop-blur-xs text-sm font-medium text-foreground hover:text-destructive hover:bg-muted flex items-center gap-1.5 transition-colors shadow-xs disabled:opacity-45 disabled:cursor-not-allowed"
+                    className="h-9 px-3 rounded-lg border border-border bg-card text-sm font-medium text-foreground hover:text-destructive hover:bg-muted flex items-center gap-1.5 transition-colors shadow-sm disabled:opacity-65 disabled:cursor-not-allowed"
                   >
                     <Trash2 className="h-4 w-4 text-muted-foreground" />
                     <span>Clear</span>
@@ -516,7 +516,7 @@ export default function HomePage() {
                       type="button"
                       onClick={() => setShowActionsDropdown(!showActionsDropdown)}
                       title="Load demo athletes, 500-athlete stress test, exports, and database sync"
-                      className="h-9 px-3 rounded-lg border border-border bg-card/95 backdrop-blur-xs hover:bg-muted text-sm font-medium text-foreground flex items-center gap-1.5 transition-colors shadow-xs"
+                      className="h-9 px-3 rounded-lg border border-border bg-card hover:bg-muted text-sm font-medium text-foreground flex items-center gap-1.5 transition-colors shadow-sm"
                     >
                       <span>More</span>
                       <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
