@@ -2,9 +2,9 @@
 
 import React, { useState, useMemo } from "react";
 import {
-  Search, ArrowUp, ArrowDown, Pencil, Trash2,
+  Search, ArrowUp, ArrowDown, ArrowUpDown, Pencil, Trash2,
   ChevronLeft, ChevronRight, AlertTriangle, CheckSquare, Square,
-  Check, X, FileSpreadsheet
+  Check, X, FileSpreadsheet, Filter, Eye, CheckCircle2, ChevronDown
 } from "lucide-react";
 import { CategorizedAthlete, RulesConfig } from "@/lib/api";
 import { categorizeAthleteClient, DEFAULT_RULES, formatDisplayDate } from "@/lib/rules";
@@ -34,9 +34,26 @@ const TABLE_COLUMNS = [
   { key: "height_cm", label: "Ht (cm)", tip: "Sort by Height (cm)" },
   { key: "full_category", label: "Assigned Category", tip: "Sort by Assigned Category" },
   { key: "club", label: "Club", tip: "Sort by Club / Academy" },
+  { key: "status", label: "Status", tip: "Sort by Verification Status (Verified / Flagged)" },
 ];
 
 const DIVISIONS = ["All", "Sub-Jr", "Cadet", "Junior", "Senior"];
+
+function isAthleteFlagged(a: Pick<CategorizedAthlete, "notes" | "age_group" | "weight_class">): boolean {
+  return (Boolean(a.notes && a.notes.length > 0)) || a.age_group === "Unknown" || a.weight_class === "Unassigned";
+}
+
+function getVisiblePages(current: number, total: number): (number | "dots")[] {
+  if (total <= 5) return Array.from({ length: total }, (_, i) => i);
+  const pages = new Set<number>([0, total - 1, current, Math.max(0, current - 1), Math.min(total - 1, current + 1)]);
+  const sorted = Array.from(pages).sort((a, b) => a - b);
+  const out: (number | "dots")[] = [];
+  for (let i = 0; i < sorted.length; i++) {
+    if (i > 0 && sorted[i] - sorted[i - 1] > 1) out.push("dots");
+    out.push(sorted[i]);
+  }
+  return out;
+}
 
 export const AthletesTable: React.FC<AthletesTableProps> = ({
   athletes,
@@ -50,11 +67,14 @@ export const AthletesTable: React.FC<AthletesTableProps> = ({
   rules = DEFAULT_RULES,
 }) => {
   const [searchQuery, setSearchQuery] = useState("");
+  const [showFilters, setShowFilters] = useState(false);
+  const [filterGender, setFilterGender] = useState<"All" | "M" | "F">("All");
+  const [filterStatus, setFilterStatus] = useState<"All" | "Verified" | "Flagged">("All");
   const [sortConfig, setSortConfig] = useState<{ key: string; dir: number }>({
     key: "sr_no",
     dir: 1,
   });
-  const [pageSize, setPageSize] = useState<number>(25);
+  const [pageSize, setPageSize] = useState<number>(15);
   const [currentPage, setCurrentPage] = useState<number>(0);
   const [selectedKeys, setSelectedKeys] = useState<Set<number | string>>(new Set());
 
@@ -85,29 +105,40 @@ export const AthletesTable: React.FC<AthletesTableProps> = ({
     return counts;
   }, [athletes]);
 
+  const activeExtraFilters = (filterGender !== "All" ? 1 : 0) + (filterStatus !== "All" ? 1 : 0);
+
   // Filtered & Sorted Athletes
   const filteredAthletes = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
     const result = athletes.filter((a) => {
       const matchDivision = filterAge === "All" || a.age_group === filterAge;
+      const matchGender = filterGender === "All" || a.gender === filterGender;
+      const flagged = isAthleteFlagged(a);
+      const matchStatus =
+        filterStatus === "All" || (filterStatus === "Flagged" ? flagged : !flagged);
       const matchSearch =
         !query ||
         `${a.name} ${a.club ?? ""} ${a.full_category} ${a.weight_class}`
           .toLowerCase()
           .includes(query);
-      return matchDivision && matchSearch;
+      return matchDivision && matchGender && matchStatus && matchSearch;
     });
 
     const { key, dir } = sortConfig;
     return result.sort((a: any, b: any) => {
-      let valA = a[key] ?? "";
-      let valB = b[key] ?? "";
+      if (key === "status") {
+        const sA = isAthleteFlagged(a) ? 1 : 0;
+        const sB = isAthleteFlagged(b) ? 1 : 0;
+        return (sA - sB) * dir;
+      }
+      const valA = a[key] ?? "";
+      const valB = b[key] ?? "";
       if (typeof valA === "number" && typeof valB === "number") {
         return (valA - valB) * dir;
       }
       return String(valA).localeCompare(String(valB), undefined, { numeric: true }) * dir;
     });
-  }, [athletes, filterAge, searchQuery, sortConfig]);
+  }, [athletes, filterAge, filterGender, filterStatus, searchQuery, sortConfig]);
 
   const totalPages = Math.max(1, Math.ceil(filteredAthletes.length / pageSize));
   const validPage = Math.min(currentPage, totalPages - 1);
@@ -115,6 +146,7 @@ export const AthletesTable: React.FC<AthletesTableProps> = ({
     validPage * pageSize,
     validPage * pageSize + pageSize
   );
+  const visiblePages = useMemo(() => getVisiblePages(validPage, totalPages), [validPage, totalPages]);
 
   // Live preview category for active inline-edited row
   const inlinePreview = useMemo(() => {
@@ -235,12 +267,13 @@ export const AthletesTable: React.FC<AthletesTableProps> = ({
 
   return (
     <div className="rounded-xl border border-border bg-card shadow-xs print:hidden">
-      {/* 1. Header Toolbar: Division Tabs, Delete Button & Search */}
-      <div className="flex flex-wrap items-center gap-3 border-b border-border p-3.5">
-        {/* Division Filter Tabs */}
-        <div className="flex flex-wrap gap-1 rounded-lg bg-muted/80 p-1">
+      {/* 1. Header Toolbar: Division Pill Tabs, Search, Filters, Delete & Export */}
+      <div className="flex flex-wrap items-center gap-2.5 border-b border-border p-3.5">
+        {/* Division Filter Pill Tabs */}
+        <div className="flex flex-wrap items-center gap-1.5">
           {DIVISIONS.map((div) => {
             const isActive = filterAge === div;
+            const count = divisionCounts[div] ?? 0;
             return (
               <button
                 key={div}
@@ -249,91 +282,189 @@ export const AthletesTable: React.FC<AthletesTableProps> = ({
                   setFilterAge(div);
                   setCurrentPage(0);
                 }}
-                title={`Filter roster to ${div === "Sub-Jr" ? "Sub-Junior" : div} athletes (${divisionCounts[div] ?? 0})`}
-                className={`rounded-md px-3 py-1 text-xs font-semibold transition-all flex items-center gap-1.5 ${
+                title={`Filter roster to ${div === "Sub-Jr" ? "Sub-Junior" : div} athletes (${count})`}
+                className={`h-8 rounded-lg px-3 text-xs font-semibold transition-all flex items-center gap-1.5 ${
                   isActive
-                    ? "bg-card text-foreground shadow-xs"
-                    : "text-muted-foreground hover:text-foreground"
+                    ? "bg-primary text-primary-foreground shadow-xs"
+                    : "bg-muted/75 text-muted-foreground hover:text-foreground hover:bg-muted"
                 }`}
               >
                 <span>{div}</span>
-                <span className="text-[11px] tabular-nums opacity-70">
-                  {divisionCounts[div] ?? 0}
+                <span
+                  className={`rounded px-1.5 py-0.5 text-[11px] tabular-nums leading-none ${
+                    isActive
+                      ? "bg-primary-foreground/20 text-primary-foreground"
+                      : "text-muted-foreground"
+                  }`}
+                >
+                  {count}
                 </span>
               </button>
             );
           })}
         </div>
 
-        {/* Always-Visible Bulk Delete Button (Active when >=1 row selected, disabled otherwise) */}
-        <button
-          type="button"
-          disabled={selectedKeys.size === 0}
-          onClick={() => {
-            onDeleteSelected(Array.from(selectedKeys));
-            setSelectedKeys(new Set());
-          }}
-          title={
-            selectedKeys.size > 0
-              ? `Delete ${selectedKeys.size} selected athlete${selectedKeys.size === 1 ? "" : "s"}`
-              : "Select one or more rows using the checkboxes to enable Delete"
-          }
-          className={`h-9 px-3 rounded-lg text-xs font-semibold inline-flex items-center gap-1.5 transition-all ${
-            selectedKeys.size > 0
-              ? "bg-destructive text-destructive-foreground hover:bg-destructive/90 shadow-xs"
-              : "border border-border bg-card text-muted-foreground opacity-50 cursor-not-allowed"
-          }`}
-        >
-          <Trash2 className="h-3.5 w-3.5" />
-          <span>Delete{selectedKeys.size > 0 ? ` (${selectedKeys.size})` : ""}</span>
-        </button>
+        {/* Right Controls: Search + Filters + Conditional Delete + Export */}
+        <div className="flex flex-wrap items-center gap-2 ml-auto w-full lg:w-auto justify-end">
+          {/* Search Input */}
+          <div className="relative flex-1 sm:flex-initial sm:w-64">
+            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+            <input
+              type="text"
+              className="h-9 w-full rounded-lg border border-input bg-background pl-8 pr-8 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/60"
+              placeholder="Search name, club, category..."
+              title="Search athletes by name, club, or category"
+              value={searchQuery}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                setCurrentPage(0);
+              }}
+            />
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => setSearchQuery("")}
+                title="Clear search filter"
+                aria-label="Clear search"
+                className="absolute right-2 top-2 p-0.5 rounded text-muted-foreground hover:text-foreground"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
+          </div>
 
-        {/* Export Quick Action */}
-        <button
-          type="button"
-          disabled={athletes.length === 0}
-          onClick={onExportExcel}
-          title={athletes.length ? "Export categorized multi-sheet Excel (.xlsx)" : "Add athletes first to export Excel"}
-          className="h-9 px-3 rounded-lg border border-border bg-card hover:bg-muted text-xs font-medium text-foreground inline-flex items-center gap-1.5 transition-colors shadow-xs disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          <FileSpreadsheet className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
-          <span className="hidden sm:inline">Export Excel</span>
-        </button>
+          {/* Expandable Filters Toggle Button */}
+          <button
+            type="button"
+            onClick={() => setShowFilters((v) => !v)}
+            title="Filter athletes by gender or verification status"
+            className={`h-9 px-3 rounded-lg border text-xs font-medium inline-flex items-center gap-1.5 transition-colors shadow-xs ${
+              showFilters || activeExtraFilters > 0
+                ? "border-primary/50 bg-primary/10 text-primary"
+                : "border-border bg-card hover:bg-muted text-foreground"
+            }`}
+          >
+            <Filter className="h-3.5 w-3.5" />
+            <span>Filters</span>
+            {activeExtraFilters > 0 && (
+              <span className="rounded-full bg-primary text-primary-foreground px-1.5 py-0.2 text-[10px] font-bold">
+                {activeExtraFilters}
+              </span>
+            )}
+            <ChevronDown className={`h-3.5 w-3.5 transition-transform ${showFilters ? "rotate-180" : ""}`} />
+          </button>
 
-        {/* Search Input */}
-        <div className="relative ml-auto w-full max-w-xs">
-          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-          <input
-            type="text"
-            className="h-9 w-full rounded-lg border border-input bg-background pl-8 pr-8 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/60"
-            placeholder="Search name, club, category…"
-            title="Search athletes by name, club, or category"
-            value={searchQuery}
-            onChange={(e) => {
-              setSearchQuery(e.target.value);
-              setCurrentPage(0);
+          {/* Always-Visible Bulk Delete Button (Active when >=1 row selected, disabled otherwise) */}
+          <button
+            type="button"
+            disabled={selectedKeys.size === 0}
+            onClick={() => {
+              onDeleteSelected(Array.from(selectedKeys));
+              setSelectedKeys(new Set());
             }}
-          />
-          {searchQuery && (
+            title={
+              selectedKeys.size > 0
+                ? `Delete ${selectedKeys.size} selected athlete${selectedKeys.size === 1 ? "" : "s"}`
+                : "Select one or more rows using the checkboxes to enable Delete"
+            }
+            className={`h-9 px-3 rounded-lg text-xs font-semibold inline-flex items-center gap-1.5 transition-all ${
+              selectedKeys.size > 0
+                ? "bg-destructive text-destructive-foreground hover:bg-destructive/90 shadow-xs"
+                : "border border-border bg-card text-muted-foreground opacity-50 cursor-not-allowed"
+            }`}
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+            <span>Delete{selectedKeys.size > 0 ? ` (${selectedKeys.size})` : ""}</span>
+          </button>
+
+          {/* Export Quick Action */}
+          <button
+            type="button"
+            disabled={athletes.length === 0}
+            onClick={onExportExcel}
+            title={athletes.length ? "Export categorized multi-sheet Excel (.xlsx)" : "Add athletes first to export Excel"}
+            className="h-9 px-3 rounded-lg border border-border bg-card hover:bg-muted text-xs font-medium text-foreground inline-flex items-center gap-1.5 transition-colors shadow-xs disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <FileSpreadsheet className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+            <span className="hidden sm:inline">Export Excel</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Expandable Filter Controls Strip */}
+      {showFilters && (
+        <div className="flex flex-wrap items-center gap-4 border-b border-border bg-muted/25 px-4 py-2.5 text-xs">
+          <div className="flex items-center gap-1.5">
+            <span className="font-semibold text-muted-foreground uppercase tracking-wider text-[11px]">
+              Gender:
+            </span>
+            {(["All", "M", "F"] as const).map((g) => (
+              <button
+                key={g}
+                type="button"
+                onClick={() => {
+                  setFilterGender(g);
+                  setCurrentPage(0);
+                }}
+                title={`Filter gender: ${g === "All" ? "All genders" : g === "M" ? "Male only" : "Female only"}`}
+                className={`px-2.5 py-1 rounded-md font-semibold transition-colors ${
+                  filterGender === g
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-card border border-border text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {g === "All" ? "All" : g === "M" ? "Male (M)" : "Female (F)"}
+              </button>
+            ))}
+          </div>
+
+          <div className="flex items-center gap-1.5">
+            <span className="font-semibold text-muted-foreground uppercase tracking-wider text-[11px]">
+              Status:
+            </span>
+            {(["All", "Verified", "Flagged"] as const).map((st) => (
+              <button
+                key={st}
+                type="button"
+                onClick={() => {
+                  setFilterStatus(st);
+                  setCurrentPage(0);
+                }}
+                title={`Filter verification status: ${st}`}
+                className={`px-2.5 py-1 rounded-md font-semibold transition-colors ${
+                  filterStatus === st
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-card border border-border text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {st}
+              </button>
+            ))}
+          </div>
+
+          {activeExtraFilters > 0 && (
             <button
               type="button"
-              onClick={() => setSearchQuery("")}
-              title="Clear search filter"
-              aria-label="Clear search"
-              className="absolute right-2 top-2 p-0.5 rounded text-muted-foreground hover:text-foreground"
+              onClick={() => {
+                setFilterGender("All");
+                setFilterStatus("All");
+                setCurrentPage(0);
+              }}
+              title="Reset gender and status filters"
+              className="ml-auto text-xs font-semibold text-primary hover:underline"
             >
-              <X className="h-4 w-4" />
+              Reset filters
             </button>
           )}
         </div>
-      </div>
+      )}
 
       {/* 2. Roster Table (Supports Direct In-Cell Inline Editing) */}
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-border text-left text-xs uppercase tracking-wider text-muted-foreground bg-muted/30">
-              <th className="w-8 px-3 py-2.5">
+            <tr className="border-b border-border text-left text-xs text-muted-foreground bg-muted/30">
+              <th className="w-9 px-3 py-2.5">
                 <button
                   type="button"
                   onClick={handleToggleSelectAll}
@@ -353,7 +484,7 @@ export const AthletesTable: React.FC<AthletesTableProps> = ({
                 </button>
               </th>
               {TABLE_COLUMNS.map((col) => (
-                <th key={col.key} className="whitespace-nowrap px-3 py-2.5 font-medium">
+                <th key={col.key} className="whitespace-nowrap px-3 py-2.5 font-semibold">
                   <button
                     type="button"
                     title={col.tip}
@@ -361,16 +492,19 @@ export const AthletesTable: React.FC<AthletesTableProps> = ({
                     onClick={() => toggleSort(col.key)}
                   >
                     <span>{col.label}</span>
-                    {sortConfig.key === col.key &&
-                      (sortConfig.dir === 1 ? (
+                    {sortConfig.key === col.key ? (
+                      sortConfig.dir === 1 ? (
                         <ArrowUp className="h-3 w-3 text-primary" />
                       ) : (
                         <ArrowDown className="h-3 w-3 text-primary" />
-                      ))}
+                      )
+                    ) : col.key === "sr_no" ? (
+                      <ArrowUpDown className="h-3 w-3 opacity-50" />
+                    ) : null}
                   </button>
                 </th>
               ))}
-              <th className="px-3 py-2.5 text-right font-medium">Actions</th>
+              <th className="px-3 py-2.5 text-right font-semibold">Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -461,7 +595,13 @@ export const AthletesTable: React.FC<AthletesTableProps> = ({
                         {editDraft.gender}
                       </button>
                     ) : (
-                      <span className={a.gender === "M" ? "text-male" : "text-female"}>
+                      <span
+                        className={`inline-flex h-6 w-6 items-center justify-center rounded-md text-xs font-bold ${
+                          a.gender === "M"
+                            ? "bg-male/15 text-male"
+                            : "bg-female/15 text-female"
+                        }`}
+                      >
                         {a.gender}
                       </span>
                     )}
@@ -487,11 +627,13 @@ export const AthletesTable: React.FC<AthletesTableProps> = ({
                       </div>
                     ) : (
                       <>
-                        <span className="tabular-nums font-medium text-foreground">
+                        <span className="tabular-nums font-bold text-foreground">
                           {a.competition_age ?? a.calculated_age ?? "—"}
-                        </span>{" "}
+                        </span>
                         {a.dob && (
-                          <span className="text-xs text-muted-foreground">{a.dob}</span>
+                          <span className="text-xs text-muted-foreground tabular-nums">
+                            {" "}/ {a.dob}
+                          </span>
                         )}
                       </>
                     )}
@@ -554,7 +696,7 @@ export const AthletesTable: React.FC<AthletesTableProps> = ({
                     ) : (
                       <div className="flex items-center gap-2">
                         <DivisionBadge group={a.age_group} />
-                        <span className="font-medium text-foreground">{a.weight_class}</span>
+                        <span className="font-semibold text-foreground">{a.weight_class}</span>
                         {a.height_category && a.weight_kg && (
                           <span className="text-muted-foreground text-xs">
                             · {a.height_category}
@@ -581,7 +723,37 @@ export const AthletesTable: React.FC<AthletesTableProps> = ({
                     )}
                   </td>
 
-                  {/* 9. Actions (Save/Cancel inline when Editing, Pencil/Trash otherwise) */}
+                  {/* 9. Status Pill (Verified / Flagged - updates live when Editing) */}
+                  <td className="whitespace-nowrap px-3 py-2">
+                    {(() => {
+                      const target = isEditing && inlinePreview ? inlinePreview : a;
+                      const flagged = isAthleteFlagged(target);
+                      const noteSummary = target.notes?.length
+                        ? target.notes.join("; ")
+                        : flagged
+                        ? "Category unresolved or needs verification"
+                        : "Verified classification";
+                      return flagged ? (
+                        <span
+                          title={noteSummary}
+                          className="inline-flex items-center gap-1 rounded-full bg-warning/15 border border-warning/30 px-2.5 py-0.5 text-xs font-semibold text-warning"
+                        >
+                          <AlertTriangle className="h-3 w-3 shrink-0" />
+                          <span>Flagged</span>
+                        </span>
+                      ) : (
+                        <span
+                          title={noteSummary}
+                          className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 border border-emerald-500/25 px-2.5 py-0.5 text-xs font-semibold text-emerald-700 dark:text-emerald-300"
+                        >
+                          <CheckCircle2 className="h-3 w-3 shrink-0" />
+                          <span>Verified</span>
+                        </span>
+                      );
+                    })()}
+                  </td>
+
+                  {/* 10. Actions (Save/Cancel inline when Editing, Eye/Pencil/Trash otherwise) */}
                   <td className="px-3 py-2 text-right whitespace-nowrap">
                     {isEditing ? (
                       <div className="inline-flex items-center gap-1">
@@ -605,7 +777,16 @@ export const AthletesTable: React.FC<AthletesTableProps> = ({
                         </button>
                       </div>
                     ) : (
-                      <div className="inline-flex items-center gap-1">
+                      <div className="inline-flex items-center gap-0.5">
+                        <button
+                          type="button"
+                          onClick={() => onEditAthlete(a)}
+                          title={`Inspect or edit full record for ${a.name}`}
+                          aria-label={`View details for ${a.name}`}
+                          className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted rounded transition-colors"
+                        >
+                          <Eye className="h-3.5 w-3.5" />
+                        </button>
                         <button
                           type="button"
                           onClick={() => startInlineEdit(a, rowKey)}
@@ -633,7 +814,7 @@ export const AthletesTable: React.FC<AthletesTableProps> = ({
 
             {paginatedAthletes.length === 0 && (
               <tr>
-                <td colSpan={10} className="px-3 py-16 text-center text-muted-foreground">
+                <td colSpan={11} className="px-3 py-16 text-center text-muted-foreground">
                   No athletes found matching the active selection.
                 </td>
               </tr>
@@ -643,58 +824,82 @@ export const AthletesTable: React.FC<AthletesTableProps> = ({
       </div>
 
       {/* 3. Pagination Footer */}
-      <div className="flex items-center gap-3 p-3 text-xs text-muted-foreground border-t border-border">
-        <span>Rows</span>
-        <select
-          title="Select number of athletes shown per page"
-          className="rounded-md border border-input bg-background px-2 py-1 text-foreground focus:outline-none"
-          value={pageSize}
-          onChange={(e) => {
-            setPageSize(Number(e.target.value));
-            setCurrentPage(0);
-          }}
-        >
-          {[15, 25, 50, 100].map((size) => (
-            <option key={size} value={size}>
-              {size}
-            </option>
-          ))}
-        </select>
-
-        <span className="ml-auto tabular-nums">
+      <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 text-xs text-muted-foreground border-t border-border">
+        <span className="tabular-nums">
           {filteredAthletes.length > 0
-            ? `${validPage * pageSize + 1}–${Math.min(
+            ? `Showing ${validPage * pageSize + 1}–${Math.min(
                 filteredAthletes.length,
                 (validPage + 1) * pageSize
-              )} of ${filteredAthletes.length}`
-            : "0 of 0"}
+              )} of ${filteredAthletes.length} athletes`
+            : "Showing 0 of 0 athletes"}
         </span>
 
-        <button
-          type="button"
-          disabled={validPage === 0}
-          onClick={() => setCurrentPage(validPage - 1)}
-          title="Go to previous page"
-          className="p-1 rounded hover:bg-muted text-foreground disabled:opacity-30 disabled:pointer-events-none transition-colors"
-          aria-label="Previous Page"
-        >
-          <ChevronLeft className="h-4 w-4" />
-        </button>
+        <div className="flex items-center gap-3 ml-auto">
+          <div className="flex items-center gap-2">
+            <span>Rows per page:</span>
+            <select
+              title="Select number of athletes shown per page"
+              className="rounded-md border border-input bg-background px-2 py-1 text-foreground focus:outline-none"
+              value={pageSize}
+              onChange={(e) => {
+                setPageSize(Number(e.target.value));
+                setCurrentPage(0);
+              }}
+            >
+              {[5, 10, 15, 25, 50, 100].map((size) => (
+                <option key={size} value={size}>
+                  {size}
+                </option>
+              ))}
+            </select>
+          </div>
 
-        <span className="tabular-nums font-semibold text-foreground">
-          {validPage + 1} / {totalPages}
-        </span>
+          <div className="flex items-center gap-1">
+            <button
+              type="button"
+              disabled={validPage === 0}
+              onClick={() => setCurrentPage(validPage - 1)}
+              title="Go to previous page"
+              className="h-7 w-7 inline-flex items-center justify-center rounded-md hover:bg-muted text-foreground disabled:opacity-30 disabled:pointer-events-none transition-colors"
+              aria-label="Previous Page"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </button>
 
-        <button
-          type="button"
-          disabled={validPage >= totalPages - 1}
-          onClick={() => setCurrentPage(validPage + 1)}
-          title="Go to next page"
-          className="p-1 rounded hover:bg-muted text-foreground disabled:opacity-30 disabled:pointer-events-none transition-colors"
-          aria-label="Next Page"
-        >
-          <ChevronRight className="h-4 w-4" />
-        </button>
+            {visiblePages.map((p, i) =>
+              p === "dots" ? (
+                <span key={`dots-${i}`} className="px-1.5 text-muted-foreground">
+                  …
+                </span>
+              ) : (
+                <button
+                  key={p}
+                  type="button"
+                  onClick={() => setCurrentPage(p)}
+                  title={`Go to page ${p + 1}`}
+                  className={`h-7 min-w-7 px-2 rounded-md text-xs font-semibold tabular-nums transition-colors ${
+                    p === validPage
+                      ? "bg-primary text-primary-foreground shadow-xs"
+                      : "text-foreground hover:bg-muted"
+                  }`}
+                >
+                  {p + 1}
+                </button>
+              )
+            )}
+
+            <button
+              type="button"
+              disabled={validPage >= totalPages - 1}
+              onClick={() => setCurrentPage(validPage + 1)}
+              title="Go to next page"
+              className="h-7 w-7 inline-flex items-center justify-center rounded-md hover:bg-muted text-foreground disabled:opacity-30 disabled:pointer-events-none transition-colors"
+              aria-label="Next Page"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );

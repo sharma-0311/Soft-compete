@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import {
   Users, Scale, FileText, UserPlus, FileUp, Camera, Eraser, Download, Sparkles,
   RefreshCw, Trash2, AlertTriangle, Shield, Printer, CheckCircle2,
-  Calendar, Layers, Plus, Database, ChevronDown
+  Calendar, Layers, Plus, Database, ChevronDown, MapPin, FileSpreadsheet
 } from "lucide-react";
 
 import {
@@ -418,122 +418,191 @@ export default function HomePage() {
         {/* TAB 1: ATHLETES ROSTER WORKSPACE */}
         {currentTab === "athletes" && (
           <div className="space-y-5">
-            {/* Operational Header & Action Row (Exact Screenshot Layout) */}
-            <div className="space-y-4">
-              <div>
-                <div className="text-[11px] uppercase tracking-[0.15em] text-muted-foreground font-mono font-medium flex items-center gap-1.5">
-                  <span>{isBackendOnline ? "ONLINE" : "OFFLINE"}</span>
-                  <span>·</span>
-                  <span>{currentEvent?.event_date || "2026-12-31"}</span>
-                </div>
-                <h1 className="font-display text-3xl sm:text-[36px] font-bold uppercase tracking-tight leading-none text-foreground mt-1.5">
-                  {currentEvent?.name || "LOCAL TOURNAMENT"}
-                </h1>
-                <p className="text-sm text-muted-foreground mt-1.5">
-                  Manage registrations and verify tournament categories.
-                </p>
+            {/* Operational Hero Header with Taekwondo Illustration Banner */}
+            <section className="relative rounded-2xl border border-border bg-card shadow-xs px-5 py-5 sm:px-6 sm:py-6">
+              {/* Clipped Background Artwork Layer (kept separate so dropdown menu never clips) */}
+              <div className="pointer-events-none absolute inset-0 overflow-hidden rounded-2xl">
+                <img
+                  src="/tkd-hero-banner.jpg"
+                  alt=""
+                  aria-hidden="true"
+                  className="h-full w-full object-cover object-[85%_22%] opacity-85 dark:opacity-35 transition-opacity"
+                />
+                {/* Theme-aware fade gradient so title, metadata & buttons always have crisp contrast */}
+                <div className="absolute inset-0 bg-gradient-to-r from-card via-card/95 via-[48%] to-card/15 dark:from-card dark:via-card/95 dark:via-[50%] dark:to-card/55" />
+                <div className="absolute inset-x-0 bottom-0 h-14 bg-gradient-to-t from-card/90 to-transparent" />
               </div>
 
-              <div className="flex flex-wrap items-center gap-2">
-                {/* 1. Primary Action: Add athletes */}
-                <button
-                  onClick={() => setShowManualModal(true)}
-                  title="Open Add athlete drawer (Single or Quick Grid bulk entry)"
-                  className="h-9 px-4 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 flex items-center gap-2 transition-colors shadow-xs"
-                >
-                  <UserPlus className="h-4 w-4" />
-                  <span>Add athletes</span>
-                </button>
+              <div className="relative z-10 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+                {/* Left: Event Venue, Date, Online Pill, Tournament Title */}
+                <div className="space-y-1.5 max-w-2xl">
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs font-medium text-muted-foreground">
+                    <span className="inline-flex items-center gap-1.5">
+                      <MapPin className="h-3.5 w-3.5 text-primary shrink-0" />
+                      <span>
+                        {currentEvent?.location || (isBackendOnline ? "Competition Arena" : "Offline Workspace")}
+                      </span>
+                    </span>
+                    <span className="inline-flex items-center gap-1.5 tabular-nums">
+                      <Calendar className="h-3.5 w-3.5 text-primary shrink-0" />
+                      <span>{currentEvent?.event_date || activeRules.event_date || "2026-10-24"}</span>
+                    </span>
+                    <span
+                      title={isBackendOnline ? "Connected to FastAPI backend" : "Running locally in offline browser mode"}
+                      className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${
+                        isBackendOnline
+                          ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/25"
+                          : "bg-muted text-muted-foreground border-border"
+                      }`}
+                    >
+                      <span
+                        className={`h-1.5 w-1.5 rounded-full ${
+                          isBackendOnline ? "bg-emerald-500" : "bg-muted-foreground"
+                        }`}
+                      />
+                      <span>{isBackendOnline ? "Online" : "Offline"}</span>
+                    </span>
+                  </div>
 
-                {/* 2. Secondary Action: Import file */}
-                <button
-                  onClick={() => setShowExcelModal(true)}
-                  title="Import athletes from Excel (.xlsx) or CSV spreadsheet"
-                  className="h-9 px-3.5 rounded-lg border border-border bg-card hover:bg-muted text-sm font-medium text-foreground flex items-center gap-2 transition-colors shadow-xs"
-                >
-                  <FileUp className="h-4 w-4 text-muted-foreground" />
-                  <span>Import file</span>
-                </button>
+                  <h1 className="font-display text-3xl sm:text-[36px] font-bold uppercase tracking-tight leading-none text-foreground pt-0.5">
+                    {currentEvent?.name || "2026 DISTRICT TAEKWONDO CHAMPIONSHIP"}
+                  </h1>
+                  <p className="text-sm text-muted-foreground">
+                    Manage registrations and verify tournament categories.
+                  </p>
+                </div>
 
-                {/* 3. Scan form (Disabled - keeping visual slot, OCR disabled) */}
-                <button
-                  type="button"
-                  disabled
-                  title="Scan form (OCR image import) is currently disabled"
-                  className="h-9 px-3.5 rounded-lg border border-border bg-card text-sm font-medium text-muted-foreground/70 flex items-center gap-2 shadow-xs opacity-60 cursor-not-allowed"
-                >
-                  <Camera className="h-4 w-4" />
-                  <span>Scan form</span>
-                </button>
-
-                {/* 4. Weigh-in sheet */}
-                <button
-                  onClick={() => setShowPrintModal(true)}
-                  disabled={!athletes.length}
-                  title={athletes.length ? "Open printable official weigh-in sheet" : "Add athletes first to print weigh-in sheet"}
-                  className="h-9 px-3.5 rounded-lg border border-border bg-card hover:bg-muted text-sm font-medium text-foreground flex items-center gap-2 transition-colors shadow-xs disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <Printer className="h-4 w-4 text-muted-foreground" />
-                  <span>Weigh-in sheet</span>
-                </button>
-
-                {/* 5. Clear */}
-                <button
-                  onClick={handleClearRoster}
-                  disabled={!athletes.length}
-                  title={athletes.length ? "Clear all athletes from current roster" : "Roster is already empty"}
-                  className="h-9 px-3 rounded-lg text-sm font-medium text-muted-foreground hover:text-destructive hover:bg-muted/60 flex items-center gap-1.5 transition-colors disabled:opacity-45 disabled:cursor-not-allowed"
-                >
-                  <Eraser className="h-4 w-4" />
-                  <span>Clear</span>
-                </button>
-
-                {/* Subtle More Actions Dropdown */}
-                <div className="relative ml-auto">
+                {/* Right: Operational Action Strip */}
+                <div className="flex flex-wrap items-center gap-2">
+                  {/* 1. Primary Action: Add athletes */}
                   <button
-                    onClick={() => setShowActionsDropdown(!showActionsDropdown)}
-                    title="Demo loader, 500-athlete stress test, and database sync tools"
-                    className="h-9 px-3 rounded-lg border border-border bg-card hover:bg-muted text-xs font-medium text-muted-foreground hover:text-foreground flex items-center gap-1.5 transition-colors shadow-xs"
+                    type="button"
+                    onClick={() => setShowManualModal(true)}
+                    title="Open Add athlete drawer (Single or Quick Grid bulk entry)"
+                    className="h-9 px-4 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 flex items-center gap-2 transition-colors shadow-xs"
                   >
-                    <span>Tools</span>
-                    <ChevronDown className="h-3.5 w-3.5" />
+                    <UserPlus className="h-4 w-4" />
+                    <span>Add Athletes</span>
                   </button>
 
-                  {showActionsDropdown && (
-                    <div
-                      onClick={() => setShowActionsDropdown(false)}
-                      className="absolute right-0 mt-1 w-56 rounded-lg border border-border bg-popover text-popover-foreground shadow-lg py-1 z-30 text-xs font-medium"
+                  {/* 2. Secondary Action: Import file */}
+                  <button
+                    type="button"
+                    onClick={() => setShowExcelModal(true)}
+                    title="Import athletes from Excel (.xlsx) or CSV spreadsheet"
+                    className="h-9 px-3.5 rounded-lg border border-border bg-card/95 backdrop-blur-xs hover:bg-muted text-sm font-medium text-foreground flex items-center gap-2 transition-colors shadow-xs"
+                  >
+                    <FileUp className="h-4 w-4 text-muted-foreground" />
+                    <span>Import file</span>
+                  </button>
+
+                  {/* 3. Scan form (Disabled - keeping visual slot, OCR disabled per requirements) */}
+                  <button
+                    type="button"
+                    disabled
+                    title="Scan form (OCR image import) is currently disabled"
+                    className="h-9 px-3.5 rounded-lg border border-border bg-card/85 text-sm font-medium text-muted-foreground/70 flex items-center gap-2 shadow-xs opacity-60 cursor-not-allowed"
+                  >
+                    <Camera className="h-4 w-4" />
+                    <span>Scan form</span>
+                  </button>
+
+                  {/* 4. Weigh-in sheet */}
+                  <button
+                    type="button"
+                    onClick={() => setShowPrintModal(true)}
+                    disabled={!athletes.length}
+                    title={athletes.length ? "Open printable official weigh-in sheet" : "Add athletes first to print weigh-in sheet"}
+                    className="h-9 px-3.5 rounded-lg border border-border bg-card/95 backdrop-blur-xs hover:bg-muted text-sm font-medium text-foreground flex items-center gap-2 transition-colors shadow-xs disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <Printer className="h-4 w-4 text-muted-foreground" />
+                    <span>Weigh-in sheet</span>
+                  </button>
+
+                  {/* 5. Clear */}
+                  <button
+                    type="button"
+                    onClick={handleClearRoster}
+                    disabled={!athletes.length}
+                    title={athletes.length ? "Clear all athletes from current roster" : "Roster is already empty"}
+                    className="h-9 px-3 rounded-lg border border-border bg-card/95 backdrop-blur-xs text-sm font-medium text-muted-foreground hover:text-destructive hover:bg-muted flex items-center gap-1.5 transition-colors shadow-xs disabled:opacity-45 disabled:cursor-not-allowed"
+                  >
+                    <Eraser className="h-4 w-4" />
+                    <span>Clear</span>
+                  </button>
+
+                  {/* 6. More Tools Dropdown */}
+                  <div className="relative">
+                    <button
+                      type="button"
+                      onClick={() => setShowActionsDropdown(!showActionsDropdown)}
+                      title="Load demo athletes, 500-athlete stress test, exports, and database sync"
+                      className="h-9 px-3 rounded-lg border border-border bg-card/95 backdrop-blur-xs hover:bg-muted text-sm font-medium text-foreground flex items-center gap-1.5 transition-colors shadow-xs"
                     >
-                      <button
-                        onClick={() => handleLoadDemo()}
-                        title="Load 11 reference sample athletes"
-                        className="w-full px-3 py-2 text-left hover:bg-muted flex items-center gap-2"
+                      <span>More</span>
+                      <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
+                    </button>
+
+                    {showActionsDropdown && (
+                      <div
+                        onClick={() => setShowActionsDropdown(false)}
+                        className="absolute right-0 mt-1.5 w-60 rounded-xl border border-border bg-popover text-popover-foreground shadow-lg py-1.5 z-40 text-xs font-medium"
                       >
-                        <Sparkles className="h-3.5 w-3.5 text-warning" />
-                        <span>Load 11 Reference Athletes</span>
-                      </button>
-                      <button
-                        onClick={handleGenerate500}
-                        title="Generate 500 synthetic athletes to test scale and exports"
-                        className="w-full px-3 py-2 text-left hover:bg-muted flex items-center gap-2"
-                      >
-                        <RefreshCw className="h-3.5 w-3.5 text-primary" />
-                        <span>Stress Test (500 Athletes)</span>
-                      </button>
-                      <div className="my-1 border-t border-border" />
-                      <button
-                        onClick={handleSyncToDatabase}
-                        title="Save current roster to backend database"
-                        className="w-full px-3 py-2 text-left hover:bg-muted flex items-center gap-2 text-success"
-                      >
-                        <Database className="h-3.5 w-3.5" />
-                        <span>Sync Roster to Database</span>
-                      </button>
-                    </div>
-                  )}
+                        <button
+                          type="button"
+                          onClick={() => handleLoadDemo()}
+                          title="Load 11 reference sample athletes"
+                          className="w-full px-3 py-2 text-left hover:bg-muted flex items-center gap-2"
+                        >
+                          <Sparkles className="h-3.5 w-3.5 text-warning" />
+                          <span>Load 11 Reference Athletes</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleGenerate500}
+                          title="Generate 500 synthetic athletes to test scale and exports"
+                          className="w-full px-3 py-2 text-left hover:bg-muted flex items-center gap-2"
+                        >
+                          <RefreshCw className="h-3.5 w-3.5 text-primary" />
+                          <span>Stress Test (500 Athletes)</span>
+                        </button>
+                        <div className="my-1 border-t border-border" />
+                        <button
+                          type="button"
+                          onClick={handleExportExcel}
+                          disabled={!athletes.length}
+                          title="Download categorized Excel workbook (.xlsx)"
+                          className="w-full px-3 py-2 text-left hover:bg-muted flex items-center gap-2 disabled:opacity-45 disabled:cursor-not-allowed"
+                        >
+                          <FileSpreadsheet className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+                          <span>Export Excel (.xlsx)</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleExportCsv}
+                          disabled={!athletes.length}
+                          title="Download roster as CSV file"
+                          className="w-full px-3 py-2 text-left hover:bg-muted flex items-center gap-2 disabled:opacity-45 disabled:cursor-not-allowed"
+                        >
+                          <Download className="h-3.5 w-3.5 text-muted-foreground" />
+                          <span>Export CSV</span>
+                        </button>
+                        <div className="my-1 border-t border-border" />
+                        <button
+                          type="button"
+                          onClick={handleSyncToDatabase}
+                          title="Save current roster to backend database"
+                          className="w-full px-3 py-2 text-left hover:bg-muted flex items-center gap-2 text-emerald-600 dark:text-emerald-400"
+                        >
+                          <Database className="h-3.5 w-3.5" />
+                          <span>Sync Roster to Database</span>
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
-            </div>
+            </section>
 
             {/* Error Notification */}
             {error && (
