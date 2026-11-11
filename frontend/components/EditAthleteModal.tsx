@@ -1,9 +1,9 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { Edit3, X } from "lucide-react";
-import { CategorizedAthlete } from "@/lib/api";
-import { categorizeAthleteClient, DEFAULT_RULES } from "@/lib/rules";
+import { CategorizedAthlete, RulesConfig } from "@/lib/api";
+import { categorizeAthleteClient, DEFAULT_RULES, formatDisplayDate } from "@/lib/rules";
 import { DivisionBadge } from "@/components/DivisionBadge";
 import { DobInput } from "@/components/DobInput";
 
@@ -12,6 +12,7 @@ interface EditAthleteModalProps {
   onClose: () => void;
   athlete: CategorizedAthlete | null;
   onSave: (updated: CategorizedAthlete) => void;
+  rules?: RulesConfig;
 }
 
 export const EditAthleteModal: React.FC<EditAthleteModalProps> = ({
@@ -19,36 +20,52 @@ export const EditAthleteModal: React.FC<EditAthleteModalProps> = ({
   onClose,
   athlete,
   onSave,
+  rules = DEFAULT_RULES,
 }) => {
-  if (!isOpen || !athlete) return null;
+  const [name, setName] = useState("");
+  const [dob, setDob] = useState("");
+  const [gender, setGender] = useState<"M" | "F">("M");
+  const [weight, setWeight] = useState("");
+  const [height, setHeight] = useState("");
+  const [club, setClub] = useState("");
 
-  const [name, setName] = useState(athlete.name);
-  const [dob, setDob] = useState(athlete.dob || "");
-  const [gender, setGender] = useState<"M" | "F">(athlete.gender === "F" ? "F" : "M");
-  const [weight, setWeight] = useState(
-    athlete.weight_kg != null ? athlete.weight_kg.toString() : ""
-  );
-  const [height, setHeight] = useState(athlete.height_cm ? athlete.height_cm.toString() : "");
-  const [club, setClub] = useState(athlete.club || "");
+  useEffect(() => {
+    if (isOpen && athlete) {
+      setName(athlete.name || "");
+      setDob(formatDisplayDate(athlete.dob) || "");
+      setGender(athlete.gender === "F" ? "F" : "M");
+      setWeight(athlete.weight_kg != null ? athlete.weight_kg.toString() : "");
+      setHeight(athlete.height_cm != null ? athlete.height_cm.toString() : "");
+      setClub(athlete.club || "");
+    }
+  }, [isOpen, athlete]);
 
   // Live Recategorization
   const liveRecat = useMemo(() => {
+    if (!athlete) return null;
     const parsedW = weight.trim() ? parseFloat(weight) : null;
     const parsedH = height.trim() ? parseFloat(height) : null;
+    const dobTrim = dob.trim();
+    const fallbackAge =
+      !dobTrim && !athlete.dob && athlete.calculated_age != null ? athlete.calculated_age : undefined;
+
     return categorizeAthleteClient(
       {
         id: athlete.id,
         sr_no: athlete.sr_no,
         name: name || athlete.name,
-        dob: dob || null,
+        dob: dobTrim || null,
+        age_years: fallbackAge,
         gender,
         weight_kg: parsedW && parsedW > 0 ? parsedW : null,
         height_cm: parsedH && parsedH > 0 ? parsedH : null,
         club: club || null,
       },
-      DEFAULT_RULES
+      rules
     );
-  }, [athlete, name, dob, gender, weight, height, club]);
+  }, [athlete, name, dob, gender, weight, height, club, rules]);
+
+  if (!isOpen || !athlete || !liveRecat) return null;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -58,6 +75,7 @@ export const EditAthleteModal: React.FC<EditAthleteModalProps> = ({
       ...liveRecat,
       name: name.trim().toUpperCase(),
       club: club.trim() || undefined,
+      competition_age: liveRecat.calculated_age ?? null,
     });
     onClose();
   };

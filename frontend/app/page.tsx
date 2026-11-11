@@ -9,7 +9,7 @@ import {
 
 import {
   fetchDemo, generateSampleAthletes, exportExcelFile,
-  checkBackendHealth, fetchEvents, saveEventAthletes,
+  checkBackendHealth, fetchEvents, fetchRules, saveEventAthletes,
   CategorizedAthlete, TournamentEvent, RulesConfig
 } from "@/lib/api";
 import { DEFAULT_RULES, categorizeAthleteClient } from "@/lib/rules";
@@ -37,6 +37,7 @@ export default function HomePage() {
   const [isBackendOnline, setIsBackendOnline] = useState<boolean>(true);
   const [events, setEvents] = useState<TournamentEvent[]>([]);
   const [currentEvent, setCurrentEvent] = useState<TournamentEvent | null>(null);
+  const [activeRules, setActiveRules] = useState<RulesConfig>(DEFAULT_RULES);
 
   // Appearance Theme
   const [darkMode, setDarkMode] = useState<boolean>(false);
@@ -100,10 +101,60 @@ export default function HomePage() {
     }
   }, [athletes]);
 
+  function recategorizeAthleteRecord(
+    a: CategorizedAthlete,
+    rules: RulesConfig
+  ): CategorizedAthlete {
+    const recat = categorizeAthleteClient(
+      {
+        id: a.id,
+        sr_no: a.sr_no,
+        name: a.name,
+        dob: a.dob || null,
+        age_years: !a.dob && a.calculated_age != null ? a.calculated_age : undefined,
+        gender: a.gender,
+        weight_kg: a.weight_kg ?? null,
+        height_cm: a.height_cm ?? null,
+        club: a.club || null,
+      },
+      rules
+    );
+    return {
+      ...a,
+      ...recat,
+      id: a.id,
+      sr_no: a.sr_no,
+      weigh_in_status: a.weigh_in_status,
+      scale_weight_kg: a.scale_weight_kg,
+      scale_height_cm: a.scale_height_cm,
+      weigh_in_notes: a.weigh_in_notes,
+      weigh_in_time: a.weigh_in_time,
+      verification_status: a.verification_status,
+    };
+  }
+
   async function initApp() {
     setLoading(true);
     const online = await checkBackendHealth();
     setIsBackendOnline(online);
+
+    let loadedRules = DEFAULT_RULES;
+    try {
+      const savedRules = localStorage.getItem("tkd_active_rules_v1");
+      if (savedRules) {
+        loadedRules = JSON.parse(savedRules);
+        setActiveRules(loadedRules);
+      }
+    } catch {}
+
+    if (online) {
+      try {
+        const remoteRules = await fetchRules();
+        loadedRules = remoteRules;
+        setActiveRules(remoteRules);
+        localStorage.setItem("tkd_active_rules_v1", JSON.stringify(remoteRules));
+      } catch {}
+    }
 
     // Try restoring from localStorage first
     try {
@@ -120,7 +171,7 @@ export default function HomePage() {
     } catch {}
 
     // Otherwise load demo
-    await handleLoadDemo(online);
+    await handleLoadDemo(online, loadedRules);
     loadEvents(online);
   }
 
@@ -144,7 +195,10 @@ export default function HomePage() {
   }
 
   // Load official 11 demo athletes
-  async function handleLoadDemo(online: boolean = isBackendOnline) {
+  async function handleLoadDemo(
+    online: boolean = isBackendOnline,
+    rulesOverride: RulesConfig = activeRules
+  ) {
     setLoading(true);
     setError(null);
     try {
@@ -168,7 +222,7 @@ export default function HomePage() {
           { name: "KAVYA", age_years: 11, gender: "F", weight_kg: 37.0, height_cm: 147.0, club: "GHSS" },
         ];
         const categorized = offlineSample.map((a, idx) => ({
-          ...categorizeAthleteClient(a, DEFAULT_RULES),
+          ...categorizeAthleteClient(a, rulesOverride),
           sr_no: idx + 1
         }));
         setAthletes(categorized);
@@ -251,25 +305,38 @@ export default function HomePage() {
 
   // Row operations
   function handleAddSingleAthlete(athlete: CategorizedAthlete) {
-    const nextSr = athletes.length + 1;
-    setAthletes([{ ...athlete, sr_no: nextSr }, ...athletes]);
+    setAthletes((prev) => {
+      const maxSr = prev.reduce((max, a) => Math.max(max, a.sr_no ?? 0), 0);
+      const categorized = recategorizeAthleteRecord({ ...athlete, sr_no: maxSr + 1 }, activeRules);
+      return [categorized, ...prev];
+    });
     showToast(`Added ${athlete.name} to Roster`);
   }
 
   function handleAddBulkAthletes(newAthletes: CategorizedAthlete[]) {
-    const startSr = athletes.length;
-    const reindexed = newAthletes.map((a, i) => ({ ...a, sr_no: startSr + i + 1 }));
-    setAthletes([...reindexed, ...athletes]);
+    setAthletes((prev) => {
+      const maxSr = prev.reduce((max, a) => Math.max(max, a.sr_no ?? 0), 0);
+      const reindexed = newAthletes.map((a, i) =>
+        recategorizeAthleteRecord({ ...a, sr_no: maxSr + i + 1 }, activeRules)
+      );
+      return [...reindexed, ...prev];
+    });
     showToast(`Added ${newAthletes.length} Athletes to Roster`);
   }
 
   function handleUpdateAthlete(updated: CategorizedAthlete) {
+    const targetKey = updated.id ?? updated.sr_no ?? updated.name;
     setAthletes((prev) =>
-      prev.map((a) =>
-        (a.id ?? a.sr_no ?? a.name) === (updated.id ?? updated.sr_no ?? updated.name)
-          ? updated
-          : a
-      )
+      prev.map((a) => {
+        if ((a.id ?? a.sr_no ?? a.name) !== targetKey) return a;
+        const fieldsChanged =
+          a.name !== updated.name ||
+          a.dob !== updated.dob ||
+          a.gender !== updated.gender ||
+          a.weight_kg !== updated.weight_kg ||
+          a.height_cm !== updated.height_cm;
+        return fieldsChanged ? recategorizeAthleteRecord(updated, activeRules) : updated;
+      })
     );
     showToast(`Updated ${updated.name}`);
   }
@@ -500,6 +567,7 @@ export default function HomePage() {
               onExportExcel={handleExportExcel}
               onExportCsv={handleExportCsv}
               onOpenAddModal={() => setShowManualModal(true)}
+              rules={activeRules}
             />
           </div>
         )}
@@ -536,6 +604,7 @@ export default function HomePage() {
         onAddBulkAthletes={handleAddBulkAthletes}
         existingClubs={Array.from(new Set(athletes.map((a) => a.club).filter(Boolean) as string[]))}
         existingAthletes={athletes}
+        rules={activeRules}
       />
 
       {/* Excel / CSV Drag & Drop Upload */}
@@ -564,8 +633,13 @@ export default function HomePage() {
       <RulesConfigModal
         isOpen={showRulesModal}
         onClose={() => setShowRulesModal(false)}
-        onRulesUpdated={() => {
-          showToast("Classification Rules Updated");
+        onRulesUpdated={(updatedRules) => {
+          setActiveRules(updatedRules);
+          try {
+            localStorage.setItem("tkd_active_rules_v1", JSON.stringify(updatedRules));
+          } catch {}
+          setAthletes((prev) => prev.map((a) => recategorizeAthleteRecord(a, updatedRules)));
+          showToast("Classification Rules Updated & Roster Recategorized");
         }}
       />
 
@@ -583,6 +657,7 @@ export default function HomePage() {
         onClose={() => setEditingAthlete(null)}
         athlete={editingAthlete}
         onSave={handleUpdateAthlete}
+        rules={activeRules}
       />
     </div>
   );

@@ -176,8 +176,10 @@ export function parseDateString(str: any): Date | null {
   if (str instanceof Date) return isNaN(str.getTime()) ? null : str;
 
   const s = String(str).trim();
-  // YYYY-MM-DD
-  const isoMatch = s.match(/^(\d{4})[-/.\s](\d{1,2})[-/.\s](\d{1,2})$/);
+  if (!s) return null;
+
+  // YYYY-MM-DD (including optional ISO timestamp suffix)
+  const isoMatch = s.match(/^(\d{4})[-/.\s](\d{1,2})[-/.\s](\d{1,2})(?:[T\s].*)?$/);
   if (isoMatch) {
     const y = parseInt(isoMatch[1], 10);
     const m = parseInt(isoMatch[2], 10) - 1;
@@ -189,7 +191,7 @@ export function parseDateString(str: any): Date | null {
   }
 
   // DD/MM/YYYY or DD-MM-YYYY or DD MM YYYY
-  const dmyMatch = s.match(/^(\d{1,2})[-/.\s](\d{1,2})[-/.\s](\d{4})$/);
+  const dmyMatch = s.match(/^(\d{1,2})[-/.\s]+(\d{1,2})[-/.\s]+(\d{4})$/);
   if (dmyMatch) {
     const day = parseInt(dmyMatch[1], 10);
     const m = parseInt(dmyMatch[2], 10) - 1;
@@ -201,7 +203,7 @@ export function parseDateString(str: any): Date | null {
   }
 
   // DD Mon YYYY (e.g. "05 Feb 2013")
-  const textMatch = s.match(/^(\d{1,2})[\s-]+([a-zA-Z]+)[\s-]+(\d{4})$/);
+  const textMatch = s.match(/^(\d{1,2})[-/.\s]+([a-zA-Z]+)[-/.\s]+(\d{4})$/);
   if (textMatch) {
     const m = MONTHS[textMatch[2].toLowerCase()];
     if (m !== undefined) {
@@ -211,6 +213,33 @@ export function parseDateString(str: any): Date | null {
       if (!isNaN(d.getTime()) && d.getFullYear() === y && d.getMonth() === m && d.getDate() === day) {
         return d;
       }
+    }
+  }
+
+  // Compact 8-digit DDMMYYYY (e.g. "13112004")
+  const compactMatch = s.match(/^(\d{2})(\d{2})(\d{4})$/);
+  if (compactMatch) {
+    const day = parseInt(compactMatch[1], 10);
+    const m = parseInt(compactMatch[2], 10) - 1;
+    const y = parseInt(compactMatch[3], 10);
+    if (y >= 1920 && y <= 2100) {
+      const d = new Date(y, m, day);
+      if (!isNaN(d.getTime()) && d.getFullYear() === y && d.getMonth() === m && d.getDate() === day) {
+        return d;
+      }
+    }
+  }
+
+  // 2-digit year DD/MM/YY
+  const dmy2Match = s.match(/^(\d{1,2})[-/.\s]+(\d{1,2})[-/.\s]+(\d{2})$/);
+  if (dmy2Match) {
+    const day = parseInt(dmy2Match[1], 10);
+    const m = parseInt(dmy2Match[2], 10) - 1;
+    const yy = parseInt(dmy2Match[3], 10);
+    const y = yy < 50 ? 2000 + yy : 1900 + yy;
+    const d = new Date(y, m, day);
+    if (!isNaN(d.getTime()) && d.getFullYear() === y && d.getMonth() === m && d.getDate() === day) {
+      return d;
     }
   }
 
@@ -241,31 +270,43 @@ export function calculateAge(dob: Date, eventDate: Date = new Date(2026, 9, 24))
   return Math.max(0, age);
 }
 
-function matchHeightBracket(height: number, rules: RulesConfig): string {
-  for (const [minH, maxH, label] of rules.height_categories) {
-    if ((minH < height && height <= maxH) || (minH === 0 && height <= maxH)) {
+/** Matches a numeric measurement against configured `[min, max, label]` brackets consistently. */
+function matchBracket(
+  val: number,
+  brackets: [number, number, string][],
+  unit: string
+): string | null {
+  if (!brackets || brackets.length === 0) return null;
+  const ordered = [...brackets].sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+
+  for (const [minV, maxV, label] of ordered) {
+    if ((minV < val && val <= maxV) || (minV === 0 && val <= maxV)) {
       return label;
     }
   }
-  if (rules.height_categories.length > 0) {
-    const last = rules.height_categories[rules.height_categories.length - 1];
-    const first = rules.height_categories[0];
-    if (height > last[0]) return `Over ${last[0]}cm`;
-    if (height < first[1]) return `Under ${first[1]}cm`;
-  }
-  return "Open Height";
+
+  const first = ordered[0];
+  const last = ordered[ordered.length - 1];
+  if (val <= first[0]) return first[0] === 0 ? first[2] : `Under ${first[0]}${unit}`;
+  if (val > last[1]) return last[1] >= 900 ? last[2] : `Over ${last[1]}${unit}`;
+  if (val < first[1]) return first[2];
+  return last[2];
 }
 
 export function categorizeAthleteClient(athlete: AthleteInput, rules: RulesConfig = DEFAULT_RULES): CategorizedAthlete {
   const notes: string[] = [];
   const genderNorm = normalizeGender(athlete.gender);
-  const dobObj = parseDateString(athlete.dob);
+  const rawDobStr = athlete.dob !== undefined && athlete.dob !== null ? String(athlete.dob).trim() : "";
+  const dobObj = rawDobStr ? parseDateString(rawDobStr) : null;
 
   let calculatedAge: number | null = null;
   let ageGroup = "Unknown";
 
-  const eventParts = rules.event_date.split("-");
-  const eventDate = new Date(parseInt(eventParts[0]), parseInt(eventParts[1]) - 1, parseInt(eventParts[2]));
+  const eventParts = (rules.event_date || "2026-10-24").split("-");
+  const eventDate =
+    eventParts.length === 3
+      ? new Date(parseInt(eventParts[0], 10), parseInt(eventParts[1], 10) - 1, parseInt(eventParts[2], 10))
+      : new Date(2026, 9, 24);
 
   if (dobObj) {
     calculatedAge = calculateAge(dobObj, eventDate);
@@ -285,37 +326,37 @@ export function categorizeAthleteClient(athlete: AthleteInput, rules: RulesConfi
       }
     }
     notes.push("Age used instead of DOB");
+  } else if (rawDobStr) {
+    notes.push("Invalid DOB format");
   } else {
     notes.push("Missing DOB and Age");
   }
 
   const rawWeight = athlete.weight_kg !== undefined && athlete.weight_kg !== null ? Number(athlete.weight_kg) : NaN;
   const hasWeight = !isNaN(rawWeight) && rawWeight > 0;
+  const weightRounded = hasWeight ? Math.round(rawWeight * 10) / 10 : null;
+
   const rawHeight = athlete.height_cm !== undefined && athlete.height_cm !== null ? Number(athlete.height_cm) : NaN;
   const hasHeight = !isNaN(rawHeight) && rawHeight > 0;
+  const heightRounded = hasHeight ? Math.round(rawHeight * 10) / 10 : null;
 
   let weightClass = "Unassigned";
   let heightCat: string | null = null;
   const genderLabel = genderNorm === "M" ? "Male" : "Female";
   const parts: string[] = [ageGroup, genderLabel];
 
-  if (hasWeight) {
-    weightClass = "Open Weight";
+  if (weightRounded !== null) {
     const wClasses = rules.weight_classes[ageGroup]?.[genderNorm] || [];
-    for (const [minW, maxW, label] of wClasses) {
-      if ((minW < rawWeight && rawWeight <= maxW) || (minW === 0 && rawWeight <= maxW)) {
-        weightClass = label;
-        break;
-      }
-    }
-    if (hasHeight && ageGroup === "Sub-Jr") {
-      heightCat = matchHeightBracket(rawHeight, rules);
+    weightClass = matchBracket(weightRounded, wClasses, "kg") || "Open Weight";
+
+    if (heightRounded !== null && ageGroup === "Sub-Jr") {
+      heightCat = matchBracket(heightRounded, rules.height_categories, "cm");
     }
     parts.push(weightClass);
     if (heightCat) parts.push(heightCat);
-  } else if (hasHeight) {
+  } else if (heightRounded !== null) {
     // Weight not provided: assign category based on height
-    heightCat = matchHeightBracket(rawHeight, rules);
+    heightCat = matchBracket(heightRounded, rules.height_categories, "cm") || "Open Height";
     weightClass = heightCat;
     notes.push("Categorized by height (weight not provided)");
     parts.push(heightCat);
@@ -330,11 +371,12 @@ export function categorizeAthleteClient(athlete: AthleteInput, rules: RulesConfi
     sr_no: athlete.sr_no,
     name: (athlete.name || "").trim().toUpperCase(),
     gender: genderNorm,
-    dob: dobObj ? formatIsoDateLocal(dobObj) : (athlete.dob ? String(athlete.dob) : null),
+    dob: dobObj ? formatIsoDateLocal(dobObj) : rawDobStr || null,
     calculated_age: calculatedAge,
+    competition_age: calculatedAge,
     age_group: ageGroup,
-    weight_kg: hasWeight ? Math.round(rawWeight * 10) / 10 : null,
-    height_cm: hasHeight ? Math.round(rawHeight * 10) / 10 : null,
+    weight_kg: weightRounded,
+    height_cm: heightRounded,
     weight_class: weightClass,
     height_category: heightCat,
     full_category: parts.join(" | "),

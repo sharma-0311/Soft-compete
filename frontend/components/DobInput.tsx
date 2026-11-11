@@ -26,11 +26,29 @@ export function formatDobAutoSlash(rawNext: string, prev: string): string {
     return rawNext;
   }
 
-  // Handle pressing space, hyphen, dot, or slash as delimiter -> pad single digit and add "/"
-  if (/[\s.\-]$/.test(rawNext)) {
-    const cleaned = rawNext.replace(/[\s.\-]+/g, "/");
+  const trimmed = rawNext.trim();
+  // Convert pasted ISO YYYY-MM-DD -> DD/MM/YYYY
+  const isoPaste = trimmed.match(/^(\d{4})[-/.\s](\d{1,2})[-/.\s](\d{1,2})$/);
+  if (isoPaste) {
+    const dd = isoPaste[3].padStart(2, "0");
+    const mm = isoPaste[2].padStart(2, "0");
+    return `${dd}/${mm}/${isoPaste[1]}`;
+  }
+
+  // Keep text-month entries (e.g. "05 Feb 2013") untouched if letters are typed
+  if (/[a-zA-Z]/.test(rawNext)) {
+    return rawNext.slice(0, 15);
+  }
+
+  // Handle pressing space, hyphen, dot, or slash as delimiter
+  if (/[\s.\-/]$/.test(rawNext)) {
+    // Avoid doubling slashes if user types space right after auto-inserted "/" (e.g. "13/ ")
+    if (prev.endsWith("/") && /\/\s*[\s.\-/]$/.test(rawNext)) {
+      return prev;
+    }
+    const cleaned = rawNext.replace(/[\s.\-/]+/g, "/");
     const parts = cleaned.split("/");
-    // Pad single-digit day or month (e.g. "5/" -> "05/")
+    // Pad single-digit day or month (e.g. "5 " -> "05/")
     if (parts.length === 2 && parts[0].length === 1 && parts[1] === "") {
       return `0${parts[0]}/`;
     }
@@ -43,9 +61,9 @@ export function formatDobAutoSlash(rawNext: string, prev: string): string {
   // Normalize any delimiter groups (spaces, dots, dashes) to "/"
   const normalizedSeparators = rawNext.replace(/[\s.\-]+/g, "/");
 
-  // If pasted or entered with spaces like "13 11 2004" or "5 2 2013"
+  // If pasted with spaces/slashes like "13 11 2004" or "5 2 2013"
   if (normalizedSeparators.includes("/") && rawNext.length - prev.length > 1) {
-    const segs = normalizedSeparators.split("/").filter((s, idx) => idx < 3);
+    const segs = normalizedSeparators.split("/").filter((s, idx) => idx < 3 && s.length > 0);
     if (segs.length >= 2) {
       const dd = segs[0].slice(0, 2).padStart(2, "0");
       const mm = segs[1].slice(0, 2).padStart(2, "0");
@@ -114,8 +132,8 @@ export const DobInput: React.FC<DobInputProps> = ({
     <div className={`relative flex items-center ${className}`}>
       <input
         type="text"
-        inputMode="numeric"
-        maxLength={10}
+        inputMode="text"
+        maxLength={15}
         value={value}
         onChange={handleTextChange}
         onKeyDown={onKeyDown}

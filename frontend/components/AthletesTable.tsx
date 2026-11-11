@@ -6,7 +6,7 @@ import {
   ChevronLeft, ChevronRight, AlertTriangle, CheckSquare, Square,
   Check, X, FileSpreadsheet
 } from "lucide-react";
-import { CategorizedAthlete } from "@/lib/api";
+import { CategorizedAthlete, RulesConfig } from "@/lib/api";
 import { categorizeAthleteClient, DEFAULT_RULES, formatDisplayDate } from "@/lib/rules";
 import { DivisionBadge } from "@/components/DivisionBadge";
 import { DobInput } from "@/components/DobInput";
@@ -22,6 +22,7 @@ interface AthletesTableProps {
   onExportExcel: () => void;
   onExportCsv: () => void;
   onOpenAddModal: () => void;
+  rules?: RulesConfig;
 }
 
 const TABLE_COLUMNS = [
@@ -46,6 +47,7 @@ export const AthletesTable: React.FC<AthletesTableProps> = ({
   onDeleteAthlete,
   onDeleteSelected,
   onExportExcel,
+  rules = DEFAULT_RULES,
 }) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [sortConfig, setSortConfig] = useState<{ key: string; dir: number }>({
@@ -117,20 +119,28 @@ export const AthletesTable: React.FC<AthletesTableProps> = ({
   // Live preview category for active inline-edited row
   const inlinePreview = useMemo(() => {
     if (editingKey === null) return null;
+    const orig = athletes.find((a) => (a.id ?? a.sr_no ?? a.name) === editingKey) || null;
     const w = editDraft.weight.trim() ? parseFloat(editDraft.weight) : null;
     const h = editDraft.height.trim() ? parseFloat(editDraft.height) : null;
+    const dobTrim = editDraft.dob.trim();
+    const fallbackAge =
+      !dobTrim && orig && !orig.dob && orig.calculated_age != null ? orig.calculated_age : undefined;
+
     return categorizeAthleteClient(
       {
+        id: orig?.id,
+        sr_no: orig?.sr_no,
         name: editDraft.name || "ATHLETE",
-        dob: editDraft.dob || null,
+        dob: dobTrim || null,
+        age_years: fallbackAge,
         gender: editDraft.gender,
         weight_kg: w && w > 0 ? w : null,
         height_cm: h && h > 0 ? h : null,
         club: editDraft.club || null,
       },
-      DEFAULT_RULES
+      rules
     );
-  }, [editingKey, editDraft]);
+  }, [editingKey, editDraft, athletes, rules]);
 
   const toggleSort = (key: string) => {
     setSortConfig((prev) => ({
@@ -176,19 +186,25 @@ export const AthletesTable: React.FC<AthletesTableProps> = ({
     if (!editDraft.name.trim()) return;
     const w = editDraft.weight.trim() ? parseFloat(editDraft.weight) : null;
     const h = editDraft.height.trim() ? parseFloat(editDraft.height) : null;
+    const dobTrim = editDraft.dob.trim();
+    const fallbackAge =
+      !dobTrim && !original.dob && original.calculated_age != null
+        ? original.calculated_age
+        : undefined;
 
     const recategorized = categorizeAthleteClient(
       {
         id: original.id,
         sr_no: original.sr_no,
         name: editDraft.name,
-        dob: editDraft.dob.trim() || null,
+        dob: dobTrim || null,
+        age_years: fallbackAge,
         gender: editDraft.gender,
         weight_kg: w && w > 0 ? w : null,
         height_cm: h && h > 0 ? h : null,
         club: editDraft.club.trim() || null,
       },
-      DEFAULT_RULES
+      rules
     );
 
     const updated: CategorizedAthlete = {
@@ -196,6 +212,7 @@ export const AthletesTable: React.FC<AthletesTableProps> = ({
       ...recategorized,
       id: original.id,
       sr_no: original.sr_no,
+      competition_age: recategorized.calculated_age ?? null,
     };
 
     if (onUpdateAthlete) {
@@ -528,6 +545,11 @@ export const AthletesTable: React.FC<AthletesTableProps> = ({
                         <span className="font-semibold text-primary text-xs">
                           {inlinePreview.weight_class}
                         </span>
+                        {inlinePreview.height_category && inlinePreview.weight_kg && (
+                          <span className="text-muted-foreground text-xs">
+                            · {inlinePreview.height_category}
+                          </span>
+                        )}
                       </div>
                     ) : (
                       <div className="flex items-center gap-2">

@@ -4,7 +4,7 @@ import React, { useState, useMemo } from "react";
 import {
   Plus, Trash2, CheckCircle2, X, Clipboard, AlertTriangle
 } from "lucide-react";
-import { CategorizedAthlete } from "@/lib/api";
+import { CategorizedAthlete, RulesConfig } from "@/lib/api";
 import { categorizeAthleteClient, DEFAULT_RULES, parseDateString } from "@/lib/rules";
 import { DivisionBadge } from "@/components/DivisionBadge";
 import { DobInput } from "@/components/DobInput";
@@ -16,6 +16,7 @@ interface ManualEntryModalProps {
   onAddBulkAthletes: (athletes: CategorizedAthlete[]) => void;
   existingClubs?: string[];
   existingAthletes?: CategorizedAthlete[];
+  rules?: RulesConfig;
 }
 
 interface GridRow {
@@ -43,6 +44,7 @@ export const ManualEntryModal: React.FC<ManualEntryModalProps> = ({
   onAddBulkAthletes,
   existingClubs = [],
   existingAthletes = [],
+  rules = DEFAULT_RULES,
 }) => {
   const [activeTab, setActiveTab] = useState<"single" | "grid">("single");
 
@@ -79,9 +81,9 @@ export const ManualEntryModal: React.FC<ManualEntryModalProps> = ({
         height_cm: parsedHeight && parsedHeight > 0 ? parsedHeight : null,
         club: singleClub.trim() || null,
       },
-      DEFAULT_RULES
+      rules
     );
-  }, [singleName, singleDob, singleGender, parsedWeight, parsedHeight, singleClub]);
+  }, [singleName, singleDob, singleGender, parsedWeight, parsedHeight, singleClub, rules]);
 
   // Duplicate check
   const duplicateAthlete = useMemo(() => {
@@ -136,16 +138,17 @@ export const ManualEntryModal: React.FC<ManualEntryModalProps> = ({
     }
 
     onAddAthlete(liveCategory);
-    setSavedToast(true);
-    setTimeout(() => setSavedToast(false), 2000);
+    setSingleName("");
+    setSingleDob("");
+    setSingleWeight("");
+    setSingleHeight("");
+    setFormError(null);
 
     if (addAnother) {
-      setSingleName("");
-      setSingleDob("");
-      setSingleWeight("");
-      setSingleHeight("");
-      setFormError(null);
+      setSavedToast(true);
+      setTimeout(() => setSavedToast(false), 2000);
     } else {
+      setSavedToast(false);
       onClose();
     }
   };
@@ -235,7 +238,7 @@ export const ManualEntryModal: React.FC<ManualEntryModalProps> = ({
           height_cm: h && h > 0 ? h : null,
           club: r.club || null,
         },
-        DEFAULT_RULES
+        rules
       );
     });
 
@@ -253,9 +256,8 @@ export const ManualEntryModal: React.FC<ManualEntryModalProps> = ({
       {/* Right Slide-Over Drawer (Matches Reference Sheet Layout) */}
       <div
         onClick={(e) => e.stopPropagation()}
-        className={`bg-card text-card-foreground h-full shadow-2xl border-l border-border flex flex-col transition-all duration-200 ${
-          activeTab === "single" ? "w-full max-w-[480px]" : "w-full max-w-[1180px]"
-        }`}
+        className={`bg-card text-card-foreground h-full shadow-2xl border-l border-border flex flex-col transition-all duration-200 ${activeTab === "single" ? "w-full max-w-[480px]" : "w-full max-w-[1180px]"
+          }`}
       >
         {/* 1. Drawer Header */}
         <div className="px-6 pt-5 pb-4 border-b border-border/70 shrink-0">
@@ -281,11 +283,10 @@ export const ManualEntryModal: React.FC<ManualEntryModalProps> = ({
               type="button"
               onClick={() => setActiveTab("single")}
               title="Add one athlete at a time with instant category preview"
-              className={`px-3.5 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                activeTab === "single"
-                  ? "bg-primary text-primary-foreground shadow-xs"
-                  : "border border-border bg-card text-foreground hover:bg-muted"
-              }`}
+              className={`px-3.5 py-1.5 rounded-lg text-sm font-medium transition-colors ${activeTab === "single"
+                ? "bg-primary text-primary-foreground shadow-xs"
+                : "border border-border bg-card text-foreground hover:bg-muted"
+                }`}
             >
               One athlete
             </button>
@@ -293,11 +294,10 @@ export const ManualEntryModal: React.FC<ManualEntryModalProps> = ({
               type="button"
               onClick={() => setActiveTab("grid")}
               title="Add multiple athletes together in a structured spreadsheet grid"
-              className={`px-3.5 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                activeTab === "grid"
-                  ? "bg-primary text-primary-foreground shadow-xs"
-                  : "border border-border bg-card text-foreground hover:bg-muted"
-              }`}
+              className={`px-3.5 py-1.5 rounded-lg text-sm font-medium transition-colors ${activeTab === "grid"
+                ? "bg-primary text-primary-foreground shadow-xs"
+                : "border border-border bg-card text-foreground hover:bg-muted"
+                }`}
             >
               Quick Grid (many)
             </button>
@@ -366,11 +366,10 @@ export const ManualEntryModal: React.FC<ManualEntryModalProps> = ({
                       type="button"
                       onClick={() => setSingleGender("M")}
                       title="Select Male division"
-                      className={`rounded-md text-sm font-medium transition-all ${
-                        singleGender === "M"
-                          ? "bg-card text-foreground shadow-xs font-semibold"
-                          : "text-muted-foreground hover:text-foreground"
-                      }`}
+                      className={`rounded-md text-sm font-medium transition-all ${singleGender === "M"
+                        ? "bg-card text-foreground shadow-xs font-semibold"
+                        : "text-muted-foreground hover:text-foreground"
+                        }`}
                     >
                       Male
                     </button>
@@ -378,11 +377,10 @@ export const ManualEntryModal: React.FC<ManualEntryModalProps> = ({
                       type="button"
                       onClick={() => setSingleGender("F")}
                       title="Select Female division"
-                      className={`rounded-md text-sm font-medium transition-all ${
-                        singleGender === "F"
-                          ? "bg-card text-foreground shadow-xs font-semibold"
-                          : "text-muted-foreground hover:text-foreground"
-                      }`}
+                      className={`rounded-md text-sm font-medium transition-all ${singleGender === "F"
+                        ? "bg-card text-foreground shadow-xs font-semibold"
+                        : "text-muted-foreground hover:text-foreground"
+                        }`}
                     >
                       Female
                     </button>
@@ -471,11 +469,10 @@ export const ManualEntryModal: React.FC<ManualEntryModalProps> = ({
                 <div className="mt-1.5 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                   <span>
                     {liveCategory.calculated_age !== null
-                      ? `Competition age ${liveCategory.calculated_age}${
-                          birthYear ? ` (${DEFAULT_RULES.event_year} - ${birthYear})` : ""
-                        }.`
+                      ? `Competition age ${liveCategory.calculated_age}${birthYear ? ` (${rules.event_year} - ${birthYear})` : ""
+                      }.`
                       : "Enter DOB to compute competition age."}{" "}
-                    Rule profile: Tournament {DEFAULT_RULES.event_year} v1.
+                    Rule profile: Tournament {rules.event_year} v1.
                   </span>
 
                   {!hasMeasurement ? (
@@ -629,16 +626,16 @@ export const ManualEntryModal: React.FC<ManualEntryModalProps> = ({
                       const rowPreview =
                         row.name.trim() || hasRowMeas
                           ? categorizeAthleteClient(
-                              {
-                                name: row.name || "ATHLETE",
-                                dob: row.dob || null,
-                                gender: row.gender,
-                                weight_kg: wVal && wVal > 0 ? wVal : null,
-                                height_cm: hVal && hVal > 0 ? hVal : null,
-                                club: row.club || null,
-                              },
-                              DEFAULT_RULES
-                            )
+                            {
+                              name: row.name || "ATHLETE",
+                              dob: row.dob || null,
+                              gender: row.gender,
+                              weight_kg: wVal && wVal > 0 ? wVal : null,
+                              height_cm: hVal && hVal > 0 ? hVal : null,
+                              club: row.club || null,
+                            },
+                            rules
+                          )
                           : null;
 
                       return (
@@ -667,11 +664,10 @@ export const ManualEntryModal: React.FC<ManualEntryModalProps> = ({
                                 type="button"
                                 onClick={() => updateGridCell(idx, "gender", "M")}
                                 title="Set gender to Male"
-                                className={`rounded text-xs font-medium transition-colors ${
-                                  row.gender === "M"
-                                    ? "bg-card text-foreground shadow-xs font-semibold"
-                                    : "text-muted-foreground hover:text-foreground"
-                                }`}
+                                className={`rounded text-xs font-medium transition-colors ${row.gender === "M"
+                                  ? "bg-card text-foreground shadow-xs font-semibold"
+                                  : "text-muted-foreground hover:text-foreground"
+                                  }`}
                               >
                                 Male
                               </button>
@@ -679,11 +675,10 @@ export const ManualEntryModal: React.FC<ManualEntryModalProps> = ({
                                 type="button"
                                 onClick={() => updateGridCell(idx, "gender", "F")}
                                 title="Set gender to Female"
-                                className={`rounded text-xs font-medium transition-colors ${
-                                  row.gender === "F"
-                                    ? "bg-card text-foreground shadow-xs font-semibold"
-                                    : "text-muted-foreground hover:text-foreground"
-                                }`}
+                                className={`rounded text-xs font-medium transition-colors ${row.gender === "F"
+                                  ? "bg-card text-foreground shadow-xs font-semibold"
+                                  : "text-muted-foreground hover:text-foreground"
+                                  }`}
                               >
                                 Female
                               </button>
@@ -746,6 +741,11 @@ export const ManualEntryModal: React.FC<ManualEntryModalProps> = ({
                                 <span className="text-xs font-medium text-foreground">
                                   {rowPreview.weight_class}
                                 </span>
+                                {rowPreview.height_category && rowPreview.weight_kg && (
+                                  <span className="text-[11px] text-muted-foreground">
+                                    · {rowPreview.height_category}
+                                  </span>
+                                )}
                               </div>
                             ) : (
                               <span className="text-xs text-muted-foreground italic">

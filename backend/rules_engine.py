@@ -280,21 +280,29 @@ def normalize_gender(val: Any) -> str:
     return "M"
 
 
+MONTHS_MAP = {
+    "jan": 1, "january": 1, "feb": 2, "february": 2, "mar": 3, "march": 3,
+    "apr": 4, "april": 4, "may": 5, "jun": 6, "june": 6,
+    "jul": 7, "july": 7, "aug": 8, "august": 8, "sep": 9, "sept": 9, "september": 9,
+    "oct": 10, "october": 10, "nov": 11, "november": 11, "dec": 12, "december": 12,
+}
+
+
 def parse_dob_string(dob_raw: Any) -> Optional[date]:
-    """Parse DOB from date object, string (DD/MM/YYYY, YYYY-MM-DD, etc.), or timestamps."""
+    """Parse DOB from date/datetime object or flexible string formats."""
     if dob_raw is None or (isinstance(dob_raw, float) and str(dob_raw) == "nan"):
         return None
-    if isinstance(dob_raw, date):
-        return dob_raw
     if isinstance(dob_raw, datetime):
         return dob_raw.date()
+    if isinstance(dob_raw, date):
+        return dob_raw
 
     s = str(dob_raw).strip()
     if not s or s.lower() in ["none", "nan", "null", "–", "-"]:
         return None
 
-    # Handle standard ISO format YYYY-MM-DD
-    iso_match = re.match(r"^(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})", s)
+    # Handle standard ISO format YYYY-MM-DD (including timestamps)
+    iso_match = re.match(r"^(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})(?:[T\s].*)?$", s)
     if iso_match:
         try:
             y, m, d = int(iso_match.group(1)), int(iso_match.group(2)), int(iso_match.group(3))
@@ -303,7 +311,7 @@ def parse_dob_string(dob_raw: Any) -> Optional[date]:
             pass
 
     # Handle Indian / European format DD/MM/YYYY, DD-MM-YYYY, or DD MM YYYY
-    dmy_match = re.match(r"^(\d{1,2})[-/.\s](\d{1,2})[-/.\s](\d{4})", s)
+    dmy_match = re.match(r"^(\d{1,2})[-/.\s]+(\d{1,2})[-/.\s]+(\d{4})$", s)
     if dmy_match:
         try:
             d, m, y = int(dmy_match.group(1)), int(dmy_match.group(2)), int(dmy_match.group(3))
@@ -311,8 +319,29 @@ def parse_dob_string(dob_raw: Any) -> Optional[date]:
         except ValueError:
             pass
 
+    # Handle text month format DD Mon YYYY (e.g. "05 Feb 2013")
+    text_match = re.match(r"^(\d{1,2})[-/.\s]+([A-Za-z]+)[-/.\s]+(\d{4})$", s)
+    if text_match:
+        m = MONTHS_MAP.get(text_match.group(2).lower())
+        if m:
+            try:
+                d, y = int(text_match.group(1)), int(text_match.group(3))
+                return date(y, m, d)
+            except ValueError:
+                pass
+
+    # Handle compact 8-digit DDMMYYYY (e.g. "13112004")
+    compact_match = re.match(r"^(\d{2})(\d{2})(\d{4})$", s)
+    if compact_match:
+        try:
+            d, m, y = int(compact_match.group(1)), int(compact_match.group(2)), int(compact_match.group(3))
+            if 1920 <= y <= 2100:
+                return date(y, m, d)
+        except ValueError:
+            pass
+
     # Try 2-digit year DD/MM/YY or DD MM YY
-    dmy2_match = re.match(r"^(\d{1,2})[-/.\s](\d{1,2})[-/.\s](\d{2})$", s)
+    dmy2_match = re.match(r"^(\d{1,2})[-/.\s]+(\d{1,2})[-/.\s]+(\d{2})$", s)
     if dmy2_match:
         try:
             d, m, yy = int(dmy2_match.group(1)), int(dmy2_match.group(2)), int(dmy2_match.group(3))
@@ -363,24 +392,31 @@ def get_age_group(dob: Optional[date] = None, age_years: Optional[int] = None, c
     return AgeGroup.UNKNOWN
 
 
+def _match_bracket(val: float, brackets: List[Tuple[float, float, str]], unit: str) -> Optional[str]:
+    """Match a measurement against configured (min, max, label) brackets consistently."""
+    if not brackets:
+        return None
+    ordered = sorted(brackets, key=lambda b: (float(b[0]), float(b[1])))
+    for min_v, max_v, label in ordered:
+        min_f, max_f = float(min_v), float(max_v)
+        if (min_f < val <= max_f) or (min_f == 0 and val <= max_f):
+            return label
+
+    first_min, first_max, first_label = float(ordered[0][0]), float(ordered[0][1]), ordered[0][2]
+    last_min, last_max, last_label = float(ordered[-1][0]), float(ordered[-1][1]), ordered[-1][2]
+    if val <= first_min:
+        return first_label if first_min == 0 else f"Under {first_min:g}{unit}"
+    if val > last_max:
+        return last_label if last_max >= 900 else f"Over {last_max:g}{unit}"
+    if val < first_max:
+        return first_label
+    return last_label
+
+
 def get_weight_class(age_group: str, gender: str, weight: float, config: Optional[Dict[str, Any]] = None) -> str:
     cfg = config or CURRENT_CONFIG
     w_classes = cfg.get("weight_classes", DEFAULT_WEIGHT_CLASSES).get(age_group, {}).get(gender, [])
-
-    for min_w, max_w, label in w_classes:
-        if (min_w < weight <= max_w) or (min_w == 0 and weight <= max_w):
-            return label
-
-    # Fallback if over or under all brackets
-    if w_classes:
-        last = w_classes[-1]
-        if weight > last[0]:
-            return f"Over {last[0]}kg"
-        first = w_classes[0]
-        if weight < first[1]:
-            return f"Under {first[1]}kg"
-
-    return "Open Weight"
+    return _match_bracket(weight, w_classes, "kg") or "Open Weight"
 
 
 def get_height_category(
@@ -394,18 +430,7 @@ def get_height_category(
 
     cfg = config or CURRENT_CONFIG
     height_cats = cfg.get("height_categories", DEFAULT_HEIGHT_CATEGORIES_SUB_JR)
-
-    for min_h, max_h, label in height_cats:
-        if (min_h < height_cm <= max_h) or (min_h == 0 and height_cm <= max_h):
-            return label
-
-    if height_cats:
-        if height_cm > height_cats[-1][0]:
-            return f"Over {height_cats[-1][0]}cm"
-        if height_cm < height_cats[0][1]:
-            return f"Under {height_cats[0][1]}cm"
-
-    return None
+    return _match_bracket(height_cm, height_cats, "cm")
 
 
 def categorize_athlete(
@@ -417,7 +442,8 @@ def categorize_athlete(
 
     notes = []
     gender_norm = normalize_gender(athlete.gender)
-    dob_obj = parse_dob_string(athlete.dob) if athlete.dob is not None else None
+    raw_dob_str = str(athlete.dob).strip() if athlete.dob is not None else ""
+    dob_obj = parse_dob_string(athlete.dob) if raw_dob_str else None
 
     calculated_age = None
     if dob_obj:
@@ -427,22 +453,27 @@ def categorize_athlete(
         calculated_age = int(athlete.age_years)
         age_group = get_age_group(age_years=athlete.age_years, config=cfg)
         notes.append("Age used instead of DOB")
+    elif raw_dob_str and raw_dob_str.lower() not in ["none", "nan", "null", "–", "-"]:
+        age_group = AgeGroup.UNKNOWN
+        notes.append("Invalid DOB format")
     else:
         age_group = AgeGroup.UNKNOWN
         notes.append("Missing DOB and Age")
 
     has_weight = athlete.weight_kg is not None and athlete.weight_kg > 0
     has_height = athlete.height_cm is not None and athlete.height_cm > 0
+    weight_rounded = round(float(athlete.weight_kg), 1) if has_weight else None
+    height_rounded = round(float(athlete.height_cm), 1) if has_height else None
     gender_label = "Male" if gender_norm == "M" else "Female"
 
-    if has_weight:
-        weight_class = get_weight_class(age_group.value, gender_norm, athlete.weight_kg, config=cfg)
-        height_cat = get_height_category(athlete.height_cm, age_group.value, config=cfg)
+    if has_weight and weight_rounded is not None:
+        weight_class = get_weight_class(age_group.value, gender_norm, weight_rounded, config=cfg)
+        height_cat = get_height_category(height_rounded, age_group.value, config=cfg)
         full_cat_parts = [age_group.value, gender_label, weight_class]
         if height_cat:
             full_cat_parts.append(height_cat)
-    elif has_height:
-        height_cat = get_height_category(athlete.height_cm, age_group.value, config=cfg, force_fallback=True)
+    elif has_height and height_rounded is not None:
+        height_cat = get_height_category(height_rounded, age_group.value, config=cfg, force_fallback=True)
         weight_class = height_cat or "By Height"
         notes.append("Categorized by height (weight not provided)")
         full_cat_parts = [age_group.value, gender_label, weight_class]
@@ -456,11 +487,11 @@ def categorize_athlete(
         sr_no=athlete.sr_no,
         name=athlete.name,
         gender=gender_norm,
-        dob=dob_obj.isoformat() if dob_obj else (str(athlete.dob) if athlete.dob else None),
+        dob=dob_obj.isoformat() if dob_obj else (raw_dob_str if raw_dob_str else None),
         calculated_age=calculated_age,
         age_group=age_group.value,
-        weight_kg=round(athlete.weight_kg, 1) if has_weight else None,
-        height_cm=round(athlete.height_cm, 1) if has_height else None,
+        weight_kg=weight_rounded,
+        height_cm=height_rounded,
         weight_class=weight_class,
         height_category=height_cat,
         full_category=" | ".join(full_cat_parts),
