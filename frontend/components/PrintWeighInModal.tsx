@@ -9,13 +9,17 @@ interface PrintWeighInModalProps {
   onClose: () => void;
   athletes: CategorizedAthlete[];
   eventTitle: string;
+  eventDate?: string;
+  eventLocation?: string;
 }
 
 export const PrintWeighInModal: React.FC<PrintWeighInModalProps> = ({
   isOpen,
   onClose,
   athletes,
-  eventTitle
+  eventTitle,
+  eventDate,
+  eventLocation,
 }) => {
   const [filterDivision, setFilterDivision] = useState<string>("All");
   const printRef = useRef<HTMLDivElement>(null);
@@ -93,16 +97,22 @@ export const PrintWeighInModal: React.FC<PrintWeighInModalProps> = ({
           >
             {/* Header / Federation Banner */}
             <div className="text-center pb-4 border-b-2 border-slate-900 space-y-1">
+              <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500">
+                Soft Compete • Official Weigh-In Sheet
+              </div>
               <h1 className="text-xl sm:text-2xl font-black uppercase tracking-wider text-slate-900">
                 {eventTitle || "STATE TAEKWONDO CHAMPIONSHIP 2026"}
               </h1>
               <p className="text-xs font-bold uppercase tracking-widest text-slate-700">
                 Official Athlete Weigh-In & Category Verification Roster
               </p>
-              <div className="text-[11px] text-slate-600 pt-1 flex items-center justify-center gap-6">
+              <div className="text-[11px] text-slate-600 pt-1 flex flex-wrap items-center justify-center gap-x-6 gap-y-1">
                 <span>Division: <b>{filterDivision === "All" ? "All Competition Categories" : filterDivision}</b></span>
                 <span>Total Athletes: <b>{filteredAthletes.length}</b></span>
-                <span>Date: October 2026</span>
+                <span>Date: <b>{eventDate || "2026-10-24"}</b></span>
+                {eventLocation && (
+                  <span>Venue: <b>{eventLocation}</b></span>
+                )}
               </div>
             </div>
 

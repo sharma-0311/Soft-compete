@@ -1,51 +1,98 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
-  Trophy, Calendar, MapPin, Shield, CheckCircle2, ArrowRight,
-  ArrowLeft, X, Sparkles
+  Trophy, CheckCircle2, ArrowRight, X, AlertTriangle
 } from "lucide-react";
-import { createTournamentEvent, TournamentEvent } from "@/lib/api";
+import { createTournamentEvent, TournamentEvent, RulesConfig } from "@/lib/api";
+import { buildRulesForProfile } from "@/lib/rules";
+import { generateLocalEventId } from "@/lib/eventStorage";
 
 interface TournamentModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onCreated: (event: TournamentEvent) => void;
+  existingEvents?: TournamentEvent[];
+  onCreated: (event: TournamentEvent, rules: RulesConfig) => void;
 }
 
 export const TournamentModal: React.FC<TournamentModalProps> = ({
   isOpen,
   onClose,
+  existingEvents = [],
   onCreated
 }) => {
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [loading, setLoading] = useState(false);
 
   // Form State
-  const [name, setName] = useState("State Taekwondo Championship 2026");
+  const [name, setName] = useState("");
   const [eventDate, setEventDate] = useState("2026-10-24");
   const [location, setLocation] = useState("State Sports Complex Indoor Stadium");
-  const [discipline, setDiscipline] = useState("Kyorugi (Sparring)");
-  const [ruleProfile, setRuleProfile] = useState<"wt2026" | "tourn2026" | "custom">("tourn2026");
+  const [discipline] = useState("Kyorugi (Sparring)");
+  const [ruleProfile, setRuleProfile] = useState<"wt2026" | "tourn2026">("tourn2026");
+
+  // Reset wizard cleanly every time the modal opens
+  useEffect(() => {
+    if (isOpen) {
+      setStep(1);
+      setLoading(false);
+      const nextNum = existingEvents.length + 1;
+      setName(nextNum > 1 ? `Taekwondo Championship #${nextNum}` : "State Taekwondo Championship 2026");
+      setEventDate("2026-10-24");
+      setLocation("State Sports Complex Indoor Stadium");
+      setRuleProfile("tourn2026");
+    }
+  }, [isOpen, existingEvents.length]);
+
+  const duplicateConflict = useMemo(() => {
+    const cleanName = name.trim().toLowerCase();
+    if (!cleanName) return null;
+    return (
+      existingEvents.find(
+        (ev) =>
+          ev.name.trim().toLowerCase() === cleanName &&
+          (ev.event_date || "") === (eventDate || "")
+      ) || null
+    );
+  }, [name, eventDate, existingEvents]);
 
   if (!isOpen) return null;
 
   const handleCreate = async () => {
+    if (!name.trim() || duplicateConflict) return;
     setLoading(true);
+    const trimmedName = name.trim();
+    const trimmedLocation = location.trim();
+    const eventRules = buildRulesForProfile(ruleProfile, eventDate);
+
     try {
-      const newEvent = await createTournamentEvent(name, eventDate, location);
-      onCreated(newEvent);
+      const created = await createTournamentEvent(
+        trimmedName,
+        eventDate,
+        trimmedLocation,
+        ruleProfile,
+        eventRules
+      );
+      const newEvent: TournamentEvent = {
+        ...created,
+        rule_profile: created.rule_profile || ruleProfile,
+        rules: created.rules || eventRules,
+        athletes_count: 0,
+      };
+      onCreated(newEvent, eventRules);
       onClose();
     } catch {
-      // Local fallback
+      // Isolated offline event with guaranteed unique negative ID so it never collides with DB IDs
       const fallbackEvent: TournamentEvent = {
-        id: Date.now(),
-        name,
+        id: generateLocalEventId(existingEvents),
+        name: trimmedName,
         event_date: eventDate,
-        location,
-        athletes_count: 0
+        location: trimmedLocation,
+        rule_profile: ruleProfile,
+        rules: eventRules,
+        athletes_count: 0,
       };
-      onCreated(fallbackEvent);
+      onCreated(fallbackEvent, eventRules);
       onClose();
     } finally {
       setLoading(false);
@@ -68,12 +115,13 @@ export const TournamentModal: React.FC<TournamentModalProps> = ({
               <Trophy className="w-4 h-4" />
             </div>
             <div>
-              <h3 className="font-extrabold text-base">New Tournament Setup</h3>
-              <p className="text-xs text-slate-500">Step {step} of 3 • Guided Event Creation</p>
+              <h3 className="font-extrabold text-base">New Isolated Competition</h3>
+              <p className="text-xs text-slate-500">Step {step} of 3 • Separate roster, rules & weigh-in</p>
             </div>
           </div>
 
           <button
+            type="button"
             onClick={onClose}
             title="Close new tournament wizard"
             className="p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors"
@@ -87,7 +135,7 @@ export const TournamentModal: React.FC<TournamentModalProps> = ({
           <div className="p-6 space-y-4">
             <div>
               <label className="block text-xs font-bold uppercase text-slate-700 dark:text-slate-300 mb-1">
-                Tournament Name *
+                Competition / Event Name *
               </label>
               <input
                 type="text"
@@ -139,12 +187,27 @@ export const TournamentModal: React.FC<TournamentModalProps> = ({
               />
             </div>
 
+            {duplicateConflict && (
+              <div className="p-3 rounded-xl border border-amber-500/40 bg-amber-500/10 text-xs text-amber-700 dark:text-amber-300 flex items-start gap-2">
+                <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+                <span>
+                  A competition named <b>&ldquo;{duplicateConflict.name}&rdquo;</b> on{" "}
+                  <b>{duplicateConflict.event_date}</b> already exists. Use a distinct name or date so events stay separate with zero conflict.
+                </span>
+              </div>
+            )}
+
             <div className="pt-3 flex justify-end">
               <button
                 type="button"
+                disabled={!name.trim() || Boolean(duplicateConflict)}
                 onClick={() => setStep(2)}
-                title="Proceed to Step 2: Select competition rules profile"
-                className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-xs flex items-center gap-1.5 transition-colors shadow-md"
+                title={
+                  duplicateConflict
+                    ? "Use a unique competition name or date first"
+                    : "Proceed to Step 2: Select competition rules profile"
+                }
+                className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-45 disabled:cursor-not-allowed text-white rounded-xl font-bold text-xs flex items-center gap-1.5 transition-colors shadow-md"
               >
                 <span>Next: Choose Rules</span>
                 <ArrowRight className="w-4 h-4" />
@@ -246,6 +309,12 @@ export const TournamentModal: React.FC<TournamentModalProps> = ({
                   {ruleProfile === "tourn2026" ? "2026 Championship Spec" : "World Taekwondo Spec"}
                 </span>
               </div>
+              <div className="flex justify-between py-1">
+                <span className="text-slate-500">Initial Workspace:</span>
+                <span className="font-bold text-emerald-600 dark:text-emerald-400">
+                  Clean Empty Roster (Isolated)
+                </span>
+              </div>
             </div>
 
             <div className="pt-3 flex items-center justify-between">
@@ -259,12 +328,12 @@ export const TournamentModal: React.FC<TournamentModalProps> = ({
               </button>
               <button
                 type="button"
-                disabled={loading}
+                disabled={loading || !name.trim() || Boolean(duplicateConflict)}
                 onClick={handleCreate}
-                title="Create tournament and open its workspace"
-                className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-sm shadow-lg shadow-emerald-600/20 flex items-center gap-1.5 transition-all"
+                title="Create isolated competition workspace with a clean empty roster"
+                className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-45 text-white rounded-xl font-bold text-sm shadow-lg shadow-emerald-600/20 flex items-center gap-1.5 transition-all"
               >
-                {loading ? "Creating..." : "Launch Tournament Workspace"}
+                {loading ? "Creating..." : "Launch Competition Workspace"}
               </button>
             </div>
           </div>

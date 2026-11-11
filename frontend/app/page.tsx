@@ -1,18 +1,34 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
-  Users, Scale, FileText, UserPlus, FileUp, Eraser, Download, Sparkles,
-  RefreshCw, Trash2, AlertTriangle, Shield, Printer, CheckCircle2,
-  Calendar, Layers, Plus, Database, ChevronDown, MapPin, FileSpreadsheet
+  UserPlus, FileUp, Download, Sparkles,
+  RefreshCw, Trash2, AlertTriangle, Printer, CheckCircle2,
+  Calendar, Database, ChevronDown, MapPin, FileSpreadsheet, ShieldCheck
 } from "lucide-react";
 
 import {
   fetchDemo, generateSampleAthletes, exportExcelFile,
-  checkBackendHealth, fetchEvents, fetchRules, saveEventAthletes,
+  checkBackendHealth, fetchEvents, fetchEventAthletes, fetchEventRules,
+  createTournamentEvent, deleteTournamentEvent, saveEventAthletes, saveEventRules,
   CategorizedAthlete, TournamentEvent, RulesConfig
 } from "@/lib/api";
-import { DEFAULT_RULES, categorizeAthleteClient } from "@/lib/rules";
+import { DEFAULT_RULES, buildRulesForProfile, categorizeAthleteClient } from "@/lib/rules";
+import {
+  getStoredEvents,
+  saveStoredEvents,
+  getStoredActiveEventId,
+  saveStoredActiveEventId,
+  hasStoredEventAthletes,
+  getStoredEventAthletes,
+  saveStoredEventAthletes,
+  getStoredEventRules,
+  saveStoredEventRules,
+  removeStoredEventData,
+  migrateEventStorageId,
+  migrateLegacyStorageOnce,
+  mergeEventsSafe,
+} from "@/lib/eventStorage";
 
 import { Navbar } from "@/components/Navbar";
 import { SummaryCards } from "@/components/SummaryCards";
@@ -26,9 +42,19 @@ import { TournamentModal } from "@/components/TournamentModal";
 import { WeighInWorkspace } from "@/components/WeighInWorkspace";
 import { ReportsWorkspace } from "@/components/ReportsWorkspace";
 
+interface ScopedRosterState {
+  eventId: number | null;
+  athletes: CategorizedAthlete[];
+}
+
 export default function HomePage() {
   const [currentTab, setCurrentTab] = useState<"athletes" | "weighin" | "reports">("athletes");
-  const [athletes, setAthletes] = useState<CategorizedAthlete[]>([]);
+  const [rosterState, setRosterState] = useState<ScopedRosterState>({
+    eventId: null,
+    athletes: [],
+  });
+  const athletes = rosterState.athletes;
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successToast, setSuccessToast] = useState<string | null>(null);
@@ -38,6 +64,7 @@ export default function HomePage() {
   const [events, setEvents] = useState<TournamentEvent[]>([]);
   const [currentEvent, setCurrentEvent] = useState<TournamentEvent | null>(null);
   const [activeRules, setActiveRules] = useState<RulesConfig>(DEFAULT_RULES);
+  const activeEventIdRef = useRef<number | null>(null);
 
   // Appearance Theme
   const [darkMode, setDarkMode] = useState<boolean>(false);
@@ -88,18 +115,44 @@ export default function HomePage() {
   // Initialize App on Mount
   useEffect(() => {
     initApp();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Save to LocalStorage whenever athletes change
+  // Atomically persist athletes strictly under their owning eventId (zero cross-event leak)
   useEffect(() => {
-    if (athletes.length > 0) {
-      try {
-        localStorage.setItem("tkd_athletes_roster_v2", JSON.stringify(athletes));
-      } catch (e) {
-        console.warn("Could not save to localStorage:", e);
-      }
+    const ownerId = rosterState.eventId;
+    if (ownerId !== null && currentEvent && ownerId === currentEvent.id) {
+      saveStoredEventAthletes(ownerId, rosterState.athletes);
+      setEvents((prev) => {
+        let changed = false;
+        const next = prev.map((ev) => {
+          if (ev.id !== ownerId || ev.athletes_count === rosterState.athletes.length) {
+            return ev;
+          }
+          changed = true;
+          return { ...ev, athletes_count: rosterState.athletes.length };
+        });
+        if (changed) saveStoredEvents(next);
+        return changed ? next : prev;
+      });
     }
-  }, [athletes]);
+  }, [rosterState, currentEvent?.id]);
+
+  // Helper that updates athletes only when owner matches expected active competition
+  function updateActiveAthletes(
+    updater: (prev: CategorizedAthlete[]) => CategorizedAthlete[],
+    expectedEventId: number | null = activeEventIdRef.current
+  ) {
+    if (expectedEventId === null) return;
+    setRosterState((prev) => {
+      if (activeEventIdRef.current !== expectedEventId) return prev;
+      const base = prev.eventId === expectedEventId ? prev.athletes : [];
+      return {
+        eventId: expectedEventId,
+        athletes: updater(base),
+      };
+    });
+  }
 
   function recategorizeAthleteRecord(
     a: CategorizedAthlete,
@@ -133,81 +186,230 @@ export default function HomePage() {
     };
   }
 
+  async function resolveRulesForEvent(ev: TournamentEvent, online: boolean): Promise<RulesConfig> {
+    const cached = getStoredEventRules(ev.id);
+    if (cached) {
+      if (activeEventIdRef.current === ev.id) setActiveRules(cached);
+      return cached;
+    }
+
+    if (ev.rules) {
+      saveStoredEventRules(ev.id, ev.rules);
+      if (activeEventIdRef.current === ev.id) setActiveRules(ev.rules);
+      return ev.rules;
+    }
+
+    if (online && ev.id > 0) {
+      try {
+        const remote = await fetchEventRules(ev.id);
+        saveStoredEventRules(ev.id, remote);
+        if (activeEventIdRef.current === ev.id) setActiveRules(remote);
+        return remote;
+      } catch {}
+    }
+
+    const profile = ev.rule_profile === "wt2026" ? "wt2026" : "tourn2026";
+    const built = buildRulesForProfile(profile, ev.event_date);
+    saveStoredEventRules(ev.id, built);
+    if (activeEventIdRef.current === ev.id) setActiveRules(built);
+    return built;
+  }
+
+  async function loadRosterForEvent(
+    ev: TournamentEvent,
+    online: boolean,
+    eventRules: RulesConfig,
+    allowInitialDemo: boolean
+  ) {
+    if (hasStoredEventAthletes(ev.id)) {
+      const localList = getStoredEventAthletes(ev.id) || [];
+      if (activeEventIdRef.current === ev.id) {
+        setRosterState({ eventId: ev.id, athletes: localList });
+      }
+      return;
+    }
+
+    if (online && ev.id > 0) {
+      try {
+        const remoteList = await fetchEventAthletes(ev.id);
+        if (activeEventIdRef.current !== ev.id) return;
+        if (remoteList.length > 0) {
+          saveStoredEventAthletes(ev.id, remoteList);
+          setRosterState({ eventId: ev.id, athletes: remoteList });
+          return;
+        }
+      } catch {}
+    }
+
+    if (allowInitialDemo) {
+      await handleLoadDemo(online, eventRules, ev.id);
+      return;
+    }
+
+    saveStoredEventAthletes(ev.id, []);
+    if (activeEventIdRef.current === ev.id) {
+      setRosterState({ eventId: ev.id, athletes: [] });
+    }
+  }
+
   async function initApp() {
     setLoading(true);
     const online = await checkBackendHealth();
     setIsBackendOnline(online);
 
-    let loadedRules = DEFAULT_RULES;
-    try {
-      const savedRules = localStorage.getItem("tkd_active_rules_v1");
-      if (savedRules) {
-        loadedRules = JSON.parse(savedRules);
-        setActiveRules(loadedRules);
-      }
-    } catch {}
+    const localSavedEvents = getStoredEvents();
+    let eventsList: TournamentEvent[] = [];
 
     if (online) {
       try {
-        const remoteRules = await fetchRules();
-        loadedRules = remoteRules;
-        setActiveRules(remoteRules);
-        localStorage.setItem("tkd_active_rules_v1", JSON.stringify(remoteRules));
+        const remoteEvents = await fetchEvents();
+        eventsList = mergeEventsSafe(remoteEvents, localSavedEvents);
       } catch {}
     }
 
-    // Try restoring from localStorage first
-    try {
-      const saved = localStorage.getItem("tkd_athletes_roster_v2");
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          setAthletes(parsed);
-          setLoading(false);
-          loadEvents(online);
-          return;
-        }
-      }
-    } catch {}
+    if (eventsList.length === 0) {
+      eventsList =
+        localSavedEvents && localSavedEvents.length > 0
+          ? localSavedEvents
+          : [
+              {
+                id: 1,
+                name: "2026 District Taekwondo Championship",
+                event_date: "2026-10-24",
+                location: "State Sports Complex",
+                rule_profile: "tourn2026",
+                athletes_count: 0,
+              },
+            ];
+    }
 
-    // Otherwise load demo
-    await handleLoadDemo(online, loadedRules);
-    loadEvents(online);
+    saveStoredEvents(eventsList);
+    setEvents(eventsList);
+
+    const storedActiveId = getStoredActiveEventId();
+    const initialEvent =
+      eventsList.find((e) => e.id === storedActiveId) || eventsList[0];
+
+    migrateLegacyStorageOnce(initialEvent.id);
+
+    activeEventIdRef.current = initialEvent.id;
+    saveStoredActiveEventId(initialEvent.id);
+    setCurrentEvent(initialEvent);
+
+    const rulesForEvent = await resolveRulesForEvent(initialEvent, online);
+    const isFreshFirstLaunch = eventsList.length === 1 && !hasStoredEventAthletes(initialEvent.id);
+    await loadRosterForEvent(initialEvent, online, rulesForEvent, isFreshFirstLaunch);
+
+    setLoading(false);
   }
 
-  async function loadEvents(online: boolean) {
-    if (online) {
-      try {
-        const evList = await fetchEvents();
-        setEvents(evList);
-        if (evList.length > 0) setCurrentEvent(evList[0]);
-      } catch {}
+  async function handleSelectEvent(ev: TournamentEvent) {
+    if (currentEvent?.id === ev.id) return;
+
+    setError(null);
+    setFilterAge("All");
+    setEditingAthlete(null);
+    setShowActionsDropdown(false);
+    setLoading(true);
+
+    activeEventIdRef.current = ev.id;
+    saveStoredActiveEventId(ev.id);
+    setCurrentEvent(ev);
+
+    // Clear active roster immediately if target is not cached so previous event rows never appear
+    if (hasStoredEventAthletes(ev.id)) {
+      const cached = getStoredEventAthletes(ev.id) || [];
+      setRosterState({ eventId: ev.id, athletes: cached });
     } else {
-      const fallbackEvent: TournamentEvent = {
-        id: 1,
-        name: "Local Tournament",
-        event_date: "2026-12-31",
-        location: "Offline"
-      };
-      setEvents([fallbackEvent]);
-      setCurrentEvent(fallbackEvent);
+      setRosterState({ eventId: null, athletes: [] });
     }
+
+    const rulesForEvent = await resolveRulesForEvent(ev, isBackendOnline);
+    await loadRosterForEvent(ev, isBackendOnline, rulesForEvent, false);
+    setLoading(false);
+    showToast(`Switched to "${ev.name}"`);
   }
 
-  // Load official 11 demo athletes
+  function handleCreateEvent(newEvent: TournamentEvent, eventRules: RulesConfig) {
+    setError(null);
+    setFilterAge("All");
+    setEditingAthlete(null);
+    setShowActionsDropdown(false);
+
+    const isolatedEvent: TournamentEvent = {
+      ...newEvent,
+      athletes_count: 0,
+      rules: eventRules,
+    };
+
+    saveStoredEventRules(isolatedEvent.id, eventRules);
+    saveStoredEventAthletes(isolatedEvent.id, []);
+
+    setEvents((prev) => {
+      const next = [isolatedEvent, ...prev.filter((e) => e.id !== isolatedEvent.id)];
+      saveStoredEvents(next);
+      return next;
+    });
+
+    activeEventIdRef.current = isolatedEvent.id;
+    saveStoredActiveEventId(isolatedEvent.id);
+    setCurrentEvent(isolatedEvent);
+    setActiveRules(eventRules);
+    setRosterState({ eventId: isolatedEvent.id, athletes: [] });
+
+    showToast(`Created isolated competition "${isolatedEvent.name}"`);
+  }
+
+  async function handleDeleteEvent(targetEvent: TournamentEvent) {
+    if (events.length <= 1) {
+      setError("Keep at least one competition workspace.");
+      return;
+    }
+    const confirmed = confirm(
+      `Delete competition "${targetEvent.name}" (${targetEvent.event_date}) and all of its athlete & weigh-in records?\n\nOther competitions will remain untouched.`
+    );
+    if (!confirmed) return;
+
+    if (isBackendOnline && targetEvent.id > 0) {
+      try {
+        await deleteTournamentEvent(targetEvent.id);
+      } catch {}
+    }
+
+    removeStoredEventData(targetEvent.id);
+
+    const remaining = events.filter((e) => e.id !== targetEvent.id);
+    saveStoredEvents(remaining);
+    setEvents(remaining);
+
+    if (currentEvent?.id === targetEvent.id && remaining.length > 0) {
+      await handleSelectEvent(remaining[0]);
+    }
+    showToast(`Deleted "${targetEvent.name}"`);
+  }
+
+  // Load official 11 demo athletes strictly into the target competition
   async function handleLoadDemo(
     online: boolean = isBackendOnline,
-    rulesOverride: RulesConfig = activeRules
+    rulesOverride: RulesConfig = activeRules,
+    targetEventId: number | null = activeEventIdRef.current
   ) {
+    if (targetEventId === null) return;
     setLoading(true);
     setError(null);
     try {
       if (online) {
         const data = await fetchDemo();
-        setAthletes(data.athletes);
-        showToast("Loaded 11 Reference Athletes from Official Notebook");
+        const recategorized = data.athletes.map((a, idx) =>
+          recategorizeAthleteRecord({ ...a, sr_no: a.sr_no || idx + 1 }, rulesOverride)
+        );
+        if (activeEventIdRef.current === targetEventId) {
+          saveStoredEventAthletes(targetEventId, recategorized);
+          setRosterState({ eventId: targetEventId, athletes: recategorized });
+          showToast("Loaded 11 Reference Athletes into this competition");
+        }
       } else {
-        // Offline demo
+        // Offline demo categorized strictly against target competition rules
         const offlineSample = [
           { name: "ASHMITA", dob: "2017-11-26", gender: "F", weight_kg: 27.1, height_cm: 129.0, club: "GHSS" },
           { name: "VIBHOR", dob: "2019-10-11", gender: "M", weight_kg: 23.7, height_cm: 131.5, club: "GHSS" },
@@ -225,8 +427,11 @@ export default function HomePage() {
           ...categorizeAthleteClient(a, rulesOverride),
           sr_no: idx + 1
         }));
-        setAthletes(categorized);
-        showToast("Loaded Offline Reference Athletes");
+        if (activeEventIdRef.current === targetEventId) {
+          saveStoredEventAthletes(targetEventId, categorized);
+          setRosterState({ eventId: targetEventId, athletes: categorized });
+          showToast("Loaded Offline Reference Athletes into this competition");
+        }
       }
     } catch {
       setError("Could not load demo athletes. Backend might be offline.");
@@ -235,16 +440,24 @@ export default function HomePage() {
     }
   }
 
-  // Generate 500 athletes for stress testing & demonstration
+  // Generate 500 athletes for stress testing strictly within active competition
   async function handleGenerate500() {
+    const targetEventId = activeEventIdRef.current;
+    if (targetEventId === null) return;
     setLoading(true);
     setError(null);
     try {
-      const data = await generateSampleAthletes(500);
-      setAthletes(data.athletes);
-      showToast("Generated 500 Realistic Tournament Athletes");
+      const data = await generateSampleAthletes(500, targetEventId);
+      if (activeEventIdRef.current === targetEventId) {
+        const recategorized = data.athletes.map((a, idx) =>
+          recategorizeAthleteRecord({ ...a, sr_no: a.sr_no || idx + 1 }, activeRules)
+        );
+        saveStoredEventAthletes(targetEventId, recategorized);
+        setRosterState({ eventId: targetEventId, athletes: recategorized });
+        showToast("Generated 500 Athletes for this competition");
+      }
     } catch {
-      setError("Failed to generate 500 sample athletes. Using client fallback.");
+      setError("Failed to generate 500 sample athletes. Backend might be offline.");
     } finally {
       setLoading(false);
     }
@@ -272,7 +485,7 @@ export default function HomePage() {
     }
   }
 
-  // Fallback CSV Export
+  // Fallback CSV Export (scoped filename per competition)
   function handleExportCsv() {
     if (athletes.length === 0) return;
     const headers = ["Sr.No", "Name", "Gender", "DOB", "Age", "Division", "Weight(kg)", "Height(cm)", "Weight Class", "Height Bracket", "Category", "Club", "WeighIn Status"];
@@ -295,38 +508,39 @@ export default function HomePage() {
     const csvContent = "data:text/csv;charset=utf-8," + [headers.join(","), ...rows.map((e) => e.join(","))].join("\n");
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
+    const safeEventSlug = (currentEvent?.name || "Taekwondo_Tournament").replace(/[^a-zA-Z0-9_-]/g, "_");
     link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `Tournament_Roster_${athletes.length}_Athletes.csv`);
+    link.setAttribute("download", `${safeEventSlug}_${athletes.length}_Athletes.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    showToast("Downloaded Roster CSV");
+    showToast("Downloaded Competition Roster CSV");
   }
 
-  // Row operations
+  // Row operations strictly scoped to active competition
   function handleAddSingleAthlete(athlete: CategorizedAthlete) {
-    setAthletes((prev) => {
+    updateActiveAthletes((prev) => {
       const maxSr = prev.reduce((max, a) => Math.max(max, a.sr_no ?? 0), 0);
       const categorized = recategorizeAthleteRecord({ ...athlete, sr_no: maxSr + 1 }, activeRules);
       return [categorized, ...prev];
     });
-    showToast(`Added ${athlete.name} to Roster`);
+    showToast(`Added ${athlete.name} to ${currentEvent?.name || "Roster"}`);
   }
 
   function handleAddBulkAthletes(newAthletes: CategorizedAthlete[]) {
-    setAthletes((prev) => {
+    updateActiveAthletes((prev) => {
       const maxSr = prev.reduce((max, a) => Math.max(max, a.sr_no ?? 0), 0);
       const reindexed = newAthletes.map((a, i) =>
         recategorizeAthleteRecord({ ...a, sr_no: maxSr + i + 1 }, activeRules)
       );
       return [...reindexed, ...prev];
     });
-    showToast(`Added ${newAthletes.length} Athletes to Roster`);
+    showToast(`Added ${newAthletes.length} Athletes to ${currentEvent?.name || "Roster"}`);
   }
 
   function handleUpdateAthlete(updated: CategorizedAthlete) {
     const targetKey = updated.id ?? updated.sr_no ?? updated.name;
-    setAthletes((prev) =>
+    updateActiveAthletes((prev) =>
       prev.map((a) => {
         if ((a.id ?? a.sr_no ?? a.name) !== targetKey) return a;
         const fieldsChanged =
@@ -342,41 +556,67 @@ export default function HomePage() {
   }
 
   function handleDeleteAthlete(idOrSr: number | string) {
-    setAthletes((prev) => {
-      const next = prev.filter((a) => (a.id ?? a.sr_no ?? a.name) !== idOrSr && a.name !== idOrSr);
-      if (next.length === 0) localStorage.removeItem("tkd_athletes_roster_v2");
-      return next;
-    });
-    showToast("Removed athlete from roster");
+    updateActiveAthletes((prev) =>
+      prev.filter((a) => (a.id ?? a.sr_no ?? a.name) !== idOrSr && a.name !== idOrSr)
+    );
+    showToast("Removed athlete from competition roster");
   }
 
   function handleDeleteSelected(selectedKeys: (number | string)[]) {
     const set = new Set(selectedKeys);
-    setAthletes((prev) => {
-      const next = prev.filter((a) => !set.has(a.id ?? a.sr_no ?? a.name));
-      if (next.length === 0) localStorage.removeItem("tkd_athletes_roster_v2");
-      return next;
-    });
+    updateActiveAthletes((prev) => prev.filter((a) => !set.has(a.id ?? a.sr_no ?? a.name)));
     showToast(`Deleted ${selectedKeys.length} athlete${selectedKeys.length === 1 ? "" : "s"}`);
   }
 
   function handleClearRoster() {
-    if (confirm("Clear all athletes in this tournament roster?")) {
-      setAthletes([]);
-      localStorage.removeItem("tkd_athletes_roster_v2");
-      showToast("Roster Cleared");
+    if (!currentEvent) return;
+    if (confirm(`Clear all athletes in "${currentEvent.name}"?\n\nOther competitions will remain untouched.`)) {
+      updateActiveAthletes(() => [], currentEvent.id);
+      saveStoredEventAthletes(currentEvent.id, []);
+      showToast(`Cleared roster for "${currentEvent.name}"`);
     }
   }
 
-  // Sync to database if event exists
+  // Sync active competition (metadata, rules, and athletes) strictly under its own ID
   async function handleSyncToDatabase() {
     if (!currentEvent) return;
+    const startingEvent = currentEvent;
     setLoading(true);
     try {
-      const count = await saveEventAthletes(currentEvent.id, athletes, true);
-      showToast(`Successfully saved ${count} athletes to tournament database`);
+      let targetEvent = startingEvent;
+      if (startingEvent.id < 0) {
+        const promoted = await createTournamentEvent(
+          startingEvent.name,
+          startingEvent.event_date,
+          startingEvent.location || "",
+          startingEvent.rule_profile || "tourn2026",
+          activeRules
+        );
+        migrateEventStorageId(startingEvent.id, promoted.id);
+        targetEvent = {
+          ...promoted,
+          athletes_count: athletes.length,
+          rules: activeRules,
+        };
+        if (activeEventIdRef.current === startingEvent.id) {
+          activeEventIdRef.current = targetEvent.id;
+          saveStoredActiveEventId(targetEvent.id);
+          setCurrentEvent(targetEvent);
+          setRosterState((prev) => ({ eventId: targetEvent.id, athletes: prev.athletes }));
+        }
+        setEvents((prev) => {
+          const next = prev.map((e) => (e.id === startingEvent.id ? targetEvent : e));
+          saveStoredEvents(next);
+          return next;
+        });
+      } else {
+        await saveEventRules(targetEvent.id, activeRules).catch(() => {});
+      }
+
+      const count = await saveEventAthletes(targetEvent.id, athletes, true);
+      showToast(`Saved ${count} athletes to "${targetEvent.name}" database`);
     } catch {
-      setError("Could not sync to remote database. Saved in local storage.");
+      setError("Could not sync to remote database. Changes remain saved locally for this competition.");
     } finally {
       setLoading(false);
     }
@@ -386,6 +626,8 @@ export default function HomePage() {
   const pendingWeighInCount = athletes.filter(
     (a) => !a.weigh_in_status || a.weigh_in_status === "pending"
   ).length;
+
+  const eventScopeKey = currentEvent?.id ?? "none";
 
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col font-sans transition-colors selection:bg-primary selection:text-primary-foreground relative overflow-x-clip">
@@ -409,8 +651,9 @@ export default function HomePage() {
         onSelectTab={setCurrentTab}
         events={events}
         currentEvent={currentEvent}
-        onSelectEvent={setCurrentEvent}
+        onSelectEvent={handleSelectEvent}
         onNewEvent={() => setShowTournamentModal(true)}
+        onDeleteEvent={handleDeleteEvent}
         isBackendOnline={isBackendOnline}
         onOpenRules={() => setShowRulesModal(true)}
         darkMode={darkMode}
@@ -435,19 +678,35 @@ export default function HomePage() {
             {/* Operational Hero Header matching Reference Layout */}
             <section className="relative z-30 py-2">
               <div className="relative z-10 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-                {/* Left: Event Venue, Date & Tournament Title */}
+                {/* Left: Event Venue, Date, Isolation Badge & Tournament Title */}
                 <div className="space-y-1 max-w-2xl">
                   <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs font-medium text-muted-foreground">
                     <span className="inline-flex items-center gap-1.5">
                       <MapPin className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                       <span>
-                        {currentEvent?.location || "State Sports Complex"}
+                        {currentEvent?.location || "Venue not specified"}
                       </span>
                     </span>
                     <span className="inline-flex items-center gap-1.5 tabular-nums">
                       <Calendar className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                       <span>{currentEvent?.event_date || activeRules.event_date || "2026-10-24"}</span>
                     </span>
+                    {currentEvent && (
+                      <span
+                        title="Athletes, rules, and weigh-in records are strictly isolated per competition"
+                        className="inline-flex items-center gap-1 rounded-md border border-border bg-card/90 px-2 py-0.5 text-[11px] font-semibold text-foreground shadow-sm"
+                      >
+                        <ShieldCheck className="h-3 w-3 text-emerald-600 dark:text-emerald-400" />
+                        <span>
+                          {currentEvent.rule_profile === "wt2026" ? "WT Rules" : "2026 Spec"} · Isolated
+                        </span>
+                      </span>
+                    )}
+                    {loading && (
+                      <span className="text-[11px] font-semibold text-primary">
+                        Updating...
+                      </span>
+                    )}
                   </div>
 
                   <h1 className="font-display text-3xl sm:text-[36px] font-bold uppercase tracking-tight leading-none text-foreground pt-1">
@@ -598,15 +857,17 @@ export default function HomePage() {
               </div>
             )}
 
-            {/* Lovable Summary Metric Cards (1.3fr : 1fr : 1fr : 1fr : 1fr) */}
+            {/* Summary Metric Cards scoped strictly to active competition */}
             <SummaryCards
+              key={`summary-${eventScopeKey}`}
               athletes={athletes}
               selectedAgeGroup={filterAge}
               onSelectAgeGroup={setFilterAge}
             />
 
-            {/* Lovable Interactive Athletes Table */}
+            {/* Interactive Athletes Table (keyed by event to reset selection/inline edits cleanly on switch) */}
             <AthletesTable
+              key={`table-${eventScopeKey}`}
               athletes={athletes}
               filterAge={filterAge}
               setFilterAge={setFilterAge}
@@ -625,29 +886,36 @@ export default function HomePage() {
         {/* TAB 2: WEIGH-IN TERMINAL WORKSPACE */}
         {currentTab === "weighin" && (
           <WeighInWorkspace
+            key={`weighin-${eventScopeKey}`}
             athletes={athletes}
             onUpdateAthlete={handleUpdateAthlete}
             onOpenPrint={() => setShowPrintModal(true)}
-            eventTitle={currentEvent?.name || "State Taekwondo Championship 2026"}
+            eventTitle={currentEvent?.name || "2026 District Taekwondo Championship"}
+            eventDate={currentEvent?.event_date}
+            eventLocation={currentEvent?.location}
           />
         )}
 
         {/* TAB 3: REPORTS & BOUT SHEETS WORKSPACE */}
         {currentTab === "reports" && (
           <ReportsWorkspace
+            key={`reports-${eventScopeKey}`}
             athletes={athletes}
             onExportExcel={handleExportExcel}
             onExportCsv={handleExportCsv}
             onOpenPrint={() => setShowPrintModal(true)}
-            eventTitle={currentEvent?.name || "State Taekwondo Championship 2026"}
+            eventTitle={currentEvent?.name || "2026 District Taekwondo Championship"}
+            eventDate={currentEvent?.event_date}
+            eventLocation={currentEvent?.location}
           />
         )}
       </main>
 
-      {/* 4. MODALS & DRAWERS */}
+      {/* 4. MODALS & DRAWERS (keyed per event for strict competition separation) */}
 
       {/* Add Athlete Modal (Single Live & Quick Grid with Block Selectors) */}
       <ManualEntryModal
+        key={`manual-${eventScopeKey}`}
         isOpen={showManualModal}
         onClose={() => setShowManualModal(false)}
         onAddAthlete={handleAddSingleAthlete}
@@ -655,16 +923,20 @@ export default function HomePage() {
         existingClubs={Array.from(new Set(athletes.map((a) => a.club).filter(Boolean) as string[]))}
         existingAthletes={athletes}
         rules={activeRules}
+        eventName={currentEvent?.name}
       />
 
       {/* Excel / CSV Drag & Drop Upload */}
       <ExcelUploadModal
+        key={`excel-${eventScopeKey}`}
         isOpen={showExcelModal}
         onClose={() => setShowExcelModal(false)}
+        eventId={currentEvent?.id}
+        eventName={currentEvent?.name}
         onAthletesImported={(newAthletes, filename) => {
           handleAddBulkAthletes(newAthletes);
           setShowExcelModal(false);
-          showToast(`Imported ${newAthletes.length} athletes from ${filename}`);
+          showToast(`Imported ${newAthletes.length} athletes from ${filename} into ${currentEvent?.name || "competition"}`);
         }}
       />
 
@@ -672,37 +944,55 @@ export default function HomePage() {
       <TournamentModal
         isOpen={showTournamentModal}
         onClose={() => setShowTournamentModal(false)}
-        onCreated={(newEvent) => {
-          setEvents([newEvent, ...events]);
-          setCurrentEvent(newEvent);
-          showToast(`Tournament "${newEvent.name}" Created`);
-        }}
+        existingEvents={events}
+        onCreated={handleCreateEvent}
       />
 
-      {/* Rules & Brackets Configuration */}
+      {/* Rules & Brackets Configuration (Scoped strictly to active competition) */}
       <RulesConfigModal
+        key={`rules-${eventScopeKey}`}
         isOpen={showRulesModal}
         onClose={() => setShowRulesModal(false)}
+        eventId={currentEvent?.id}
+        eventName={currentEvent?.name}
+        eventDate={currentEvent?.event_date}
+        ruleProfile={currentEvent?.rule_profile}
+        currentRules={activeRules}
         onRulesUpdated={(updatedRules) => {
+          const targetId = currentEvent?.id ?? activeEventIdRef.current;
           setActiveRules(updatedRules);
-          try {
-            localStorage.setItem("tkd_active_rules_v1", JSON.stringify(updatedRules));
-          } catch {}
-          setAthletes((prev) => prev.map((a) => recategorizeAthleteRecord(a, updatedRules)));
-          showToast("Classification Rules Updated & Roster Recategorized");
+          if (targetId !== null) {
+            saveStoredEventRules(targetId, updatedRules);
+            updateActiveAthletes(
+              (prev) => prev.map((a) => recategorizeAthleteRecord(a, updatedRules)),
+              targetId
+            );
+            setEvents((prev) => {
+              const next = prev.map((ev) =>
+                ev.id === targetId ? { ...ev, rules: updatedRules } : ev
+              );
+              saveStoredEvents(next);
+              return next;
+            });
+          }
+          showToast(`Updated rules & recategorized "${currentEvent?.name || "competition"}"`);
         }}
       />
 
       {/* Official Printable Weigh-In Sheet */}
       <PrintWeighInModal
+        key={`print-${eventScopeKey}`}
         isOpen={showPrintModal}
         onClose={() => setShowPrintModal(false)}
         athletes={athletes}
-        eventTitle={currentEvent?.name || "State Taekwondo Championship 2026"}
+        eventTitle={currentEvent?.name || "2026 District Taekwondo Championship"}
+        eventDate={currentEvent?.event_date}
+        eventLocation={currentEvent?.location}
       />
 
       {/* Edit Athlete Modal */}
       <EditAthleteModal
+        key={`edit-${eventScopeKey}-${editingAthlete?.id ?? editingAthlete?.sr_no ?? "none"}`}
         isOpen={!!editingAthlete}
         onClose={() => setEditingAthlete(null)}
         athlete={editingAthlete}

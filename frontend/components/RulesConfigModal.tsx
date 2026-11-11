@@ -2,21 +2,31 @@
 
 import React, { useState, useEffect } from "react";
 import { Settings, Save, RotateCcw, X, Plus, Trash2, CheckCircle2, Shield, AlertTriangle } from "lucide-react";
-import { RulesConfig, fetchRules, saveRules, resetRules } from "@/lib/api";
-import { DEFAULT_RULES } from "@/lib/rules";
+import { RulesConfig, saveEventRules } from "@/lib/api";
+import { DEFAULT_RULES, buildRulesForProfile } from "@/lib/rules";
 
 interface RulesConfigModalProps {
   isOpen: boolean;
   onClose: () => void;
   onRulesUpdated: (rules: RulesConfig) => void;
+  eventId?: number;
+  eventName?: string;
+  eventDate?: string;
+  ruleProfile?: string;
+  currentRules?: RulesConfig;
 }
 
 export const RulesConfigModal: React.FC<RulesConfigModalProps> = ({
   isOpen,
   onClose,
-  onRulesUpdated
+  onRulesUpdated,
+  eventId,
+  eventName,
+  eventDate,
+  ruleProfile,
+  currentRules = DEFAULT_RULES,
 }) => {
-  const [rules, setRules] = useState<RulesConfig>(DEFAULT_RULES);
+  const [rules, setRules] = useState<RulesConfig>(currentRules);
   const [activeTab, setActiveTab] = useState<"age" | "weight" | "height">("age");
   const [selectedAgeGroup, setSelectedAgeGroup] = useState<string>("Sub-Jr");
   const [selectedGender, setSelectedGender] = useState<"M" | "F">("M");
@@ -25,27 +35,23 @@ export const RulesConfigModal: React.FC<RulesConfigModalProps> = ({
 
   useEffect(() => {
     if (isOpen) {
-      loadActiveRules();
+      setRules(JSON.parse(JSON.stringify(currentRules || DEFAULT_RULES)));
+      setSavedSuccess(false);
     }
-  }, [isOpen]);
-
-  const loadActiveRules = async () => {
-    try {
-      const data = await fetchRules();
-      setRules(data);
-    } catch {
-      setRules(DEFAULT_RULES);
-    }
-  };
+  }, [isOpen, currentRules, eventId]);
 
   if (!isOpen) return null;
 
   const handleSave = async () => {
     setSaving(true);
     try {
-      const updated = await saveRules(rules);
-      setRules(updated);
-      onRulesUpdated(updated);
+      if (eventId && eventId > 0) {
+        const updated = await saveEventRules(eventId, rules);
+        setRules(updated);
+        onRulesUpdated(updated);
+      } else {
+        onRulesUpdated(rules);
+      }
       setSavedSuccess(true);
       setTimeout(() => setSavedSuccess(false), 2000);
     } catch {
@@ -58,15 +64,19 @@ export const RulesConfigModal: React.FC<RulesConfigModalProps> = ({
   };
 
   const handleReset = async () => {
-    if (confirm("Reset all age, weight, and height rules to default 2026 federation specs?")) {
+    if (confirm(`Reset age, weight, and height rules to default federation specs for "${eventName || "this competition"}"?`)) {
+      const profile = ruleProfile === "wt2026" ? "wt2026" : "tourn2026";
+      const defaults = buildRulesForProfile(profile, eventDate || rules.event_date);
+      setRules(defaults);
       try {
-        const defaults = await resetRules();
-        setRules(defaults);
-        onRulesUpdated(defaults);
-      } catch {
-        setRules(DEFAULT_RULES);
-        onRulesUpdated(DEFAULT_RULES);
-      }
+        if (eventId && eventId > 0) {
+          const saved = await saveEventRules(eventId, defaults);
+          setRules(saved);
+          onRulesUpdated(saved);
+          return;
+        }
+      } catch {}
+      onRulesUpdated(defaults);
     }
   };
 
@@ -109,10 +119,16 @@ export const RulesConfigModal: React.FC<RulesConfigModalProps> = ({
             </div>
             <div>
               <h3 className="text-base font-extrabold text-slate-900 dark:text-white">
-                Tournament Classification Rules
+                Competition Classification Rules
               </h3>
               <p className="text-xs text-slate-500 dark:text-slate-400">
-                Configure birth years, weight brackets, and Sub-Jr height ranges
+                {eventName ? (
+                  <>
+                    Scoped only to <span className="font-semibold text-blue-600 dark:text-blue-400">{eventName}</span> • Other competitions are unaffected
+                  </>
+                ) : (
+                  "Configure birth years, weight brackets, and Sub-Jr height ranges"
+                )}
               </p>
             </div>
           </div>

@@ -156,6 +156,69 @@ export const DEFAULT_RULES: RulesConfig = {
   ]
 };
 
+/** Build an isolated deep-cloned RulesConfig scoped to a specific competition profile and date. */
+export function buildRulesForProfile(
+  profile: "tourn2026" | "wt2026" | "custom" = "tourn2026",
+  eventDate: string = DEFAULT_RULES.event_date
+): RulesConfig {
+  const clone: RulesConfig = JSON.parse(JSON.stringify(DEFAULT_RULES));
+  const cleanDate = eventDate && /^\d{4}-\d{2}-\d{2}$/.test(eventDate) ? eventDate : DEFAULT_RULES.event_date;
+  const eventYear = parseInt(cleanDate.slice(0, 4), 10) || DEFAULT_RULES.event_year;
+  const yearOffset = eventYear - 2026;
+
+  clone.event_date = cleanDate;
+  clone.event_year = eventYear;
+
+  if (profile === "wt2026") {
+    clone.age_rules = {
+      "Sub-Jr": {
+        start_year: eventYear - 11,
+        end_year: eventYear - 8,
+        approx_age_min: 8,
+        approx_age_max: 11,
+        description: `Born ${eventYear - 11}–${eventYear - 8} (8–11 years)`,
+      },
+      "Cadet": {
+        start_year: eventYear - 14,
+        end_year: eventYear - 12,
+        approx_age_min: 12,
+        approx_age_max: 14,
+        description: `Born ${eventYear - 14}–${eventYear - 12} (WT Cadet 12–14)`,
+      },
+      "Junior": {
+        start_year: eventYear - 17,
+        end_year: eventYear - 15,
+        approx_age_min: 15,
+        approx_age_max: 17,
+        description: `Born ${eventYear - 17}–${eventYear - 15} (WT Junior 15–17)`,
+      },
+      "Senior": {
+        start_year: 1960,
+        end_year: eventYear - 18,
+        approx_age_min: 18,
+        approx_age_max: 99,
+        description: `Born ${eventYear - 18} or earlier (WT Senior 18+)`,
+      },
+    };
+  } else if (yearOffset !== 0) {
+    for (const [key, rule] of Object.entries(clone.age_rules)) {
+      const startYear = key === "Senior" ? rule.start_year : rule.start_year + yearOffset;
+      const endYear = rule.end_year + yearOffset;
+      clone.age_rules[key] = {
+        ...rule,
+        start_year: startYear,
+        end_year: endYear,
+        description:
+          key === "Senior"
+            ? `Born ${endYear} or earlier (${rule.approx_age_min}+ years)`
+            : `Born ${startYear}–${endYear} (approx ${rule.approx_age_min}–${rule.approx_age_max} years)`,
+      };
+    }
+  }
+
+  return clone;
+}
+
 export function normalizeGender(val: any): string {
   if (!val) return "M";
   const s = String(val).trim().toUpperCase();

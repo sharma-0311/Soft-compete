@@ -11,6 +11,8 @@ interface ReportsWorkspaceProps {
   onExportCsv: () => void;
   onOpenPrint: () => void;
   eventTitle: string;
+  eventDate?: string;
+  eventLocation?: string;
 }
 
 function ReportTable({
@@ -60,6 +62,8 @@ export const ReportsWorkspace: React.FC<ReportsWorkspaceProps> = ({
   onExportExcel,
   onExportCsv,
   eventTitle,
+  eventDate,
+  eventLocation,
 }) => {
   const [activeTab, setActiveTab] = useState<"categories" | "weighin" | "exceptions" | "summary">(
     "categories"
@@ -104,7 +108,9 @@ export const ReportsWorkspace: React.FC<ReportsWorkspaceProps> = ({
             Reports
           </h1>
           <p className="text-sm text-muted-foreground mt-0.5">
-            {eventTitle} · {athletes.length} athletes
+            <span className="font-semibold text-foreground">{eventTitle}</span>
+            {eventDate ? ` • ${eventDate}` : ""}
+            {eventLocation ? ` • ${eventLocation}` : ""} · {athletes.length} athlete{athletes.length === 1 ? "" : "s"}
           </p>
         </div>
 

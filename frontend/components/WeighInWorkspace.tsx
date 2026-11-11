@@ -13,6 +13,8 @@ interface WeighInWorkspaceProps {
   onUpdateAthlete: (athlete: CategorizedAthlete) => void;
   onOpenPrint: () => void;
   eventTitle: string;
+  eventDate?: string;
+  eventLocation?: string;
 }
 
 const STATUS_BADGES: Record<string, string> = {
@@ -29,6 +31,8 @@ export const WeighInWorkspace: React.FC<WeighInWorkspaceProps> = ({
   onUpdateAthlete,
   onOpenPrint,
   eventTitle,
+  eventDate,
+  eventLocation,
 }) => {
   const [filterDivision, setFilterDivision] = useState<string>("All");
   const [searchQuery, setSearchQuery] = useState("");
@@ -124,7 +128,9 @@ export const WeighInWorkspace: React.FC<WeighInWorkspaceProps> = ({
             Weigh-In
           </h1>
           <p className="text-sm text-muted-foreground mt-0.5">
-            {eventTitle}. Official scale records are saved on this device.
+            <span className="font-semibold text-foreground">{eventTitle}</span>
+            {eventDate ? ` • ${eventDate}` : ""}
+            {eventLocation ? ` • ${eventLocation}` : ""} — Official scale records saved strictly to this competition.
           </p>
         </div>
         <button

@@ -30,8 +30,9 @@ from ocr_engine import run_ocr_pipeline
 from excel_engine import parse_excel_or_csv, generate_styled_excel_workbook
 from sample_generator import generate_synthetic_athletes
 from database import (
-    init_db, get_db, get_or_create_default_event,
-    get_all_events, create_event,
+    init_db, get_db, get_or_create_default_event, get_event_by_id,
+    get_all_events, create_event, delete_event,
+    get_event_rules, save_event_rules,
     save_athletes_to_event, get_athletes_from_event,
     delete_athlete, clear_event_athletes
 )
@@ -105,15 +106,42 @@ class GenerateSampleRequest(BaseModel):
     event_year: int = 2026
 
 
+def _resolve_event_config(db: Session, event_id: Optional[int]) -> Optional[Dict[str, Any]]:
+    """Resolve an event-scoped rules snapshot so competitions never mix rules."""
+    if not event_id:
+        return None
+    ev = get_event_by_id(db, event_id)
+    if not ev:
+        return None
+    rules = get_event_rules(db, event_id)
+    if rules:
+        return rules
+    # Inherit base defaults stamped with this event's own date if no snapshot yet
+    base = dict(get_active_rules())
+    if ev.event_date:
+        base["event_date"] = ev.event_date
+        try:
+            base["event_year"] = int(str(ev.event_date)[:4])
+        except Exception:
+            pass
+    return base
+
+
 @api_router.post("/sample/generate")
-def generate_sample(req: GenerateSampleRequest):
+def generate_sample(
+    req: GenerateSampleRequest,
+    event_id: Optional[int] = Query(None),
+    db: Session = Depends(get_db),
+):
     """Generate up to 2000 realistic synthetic athletes for testing scale and throughput."""
     count = max(10, min(req.count, 2000))
-    raw_athletes = generate_synthetic_athletes(count=count, event_year=req.event_year)
-    results = categorize_bulk(raw_athletes)
+    cfg = _resolve_event_config(db, event_id)
+    event_year = int(cfg.get("event_year", req.event_year)) if cfg else req.event_year
+    raw_athletes = generate_synthetic_athletes(count=count, event_year=event_year)
+    results = categorize_bulk(raw_athletes, config=cfg)
     return {
         "total": len(results),
-        "event_year": req.event_year,
+        "event_year": event_year,
         "athletes": [r.model_dump() for r in results]
     }
 
@@ -123,17 +151,27 @@ def generate_sample(req: GenerateSampleRequest):
 # ============================================================
 
 @api_router.post("/categorize", response_model=CategorizedAthlete)
-def categorize_one(athlete: AthleteInput):
+def categorize_one(
+    athlete: AthleteInput,
+    event_id: Optional[int] = Query(None),
+    db: Session = Depends(get_db),
+):
     """Categorize a single athlete with real-time feedback."""
-    return categorize_athlete(athlete)
+    cfg = _resolve_event_config(db, event_id)
+    return categorize_athlete(athlete, config=cfg)
 
 
 @api_router.post("/categorize/bulk", response_model=List[CategorizedAthlete])
-def categorize_many(athletes: List[AthleteInput]):
+def categorize_many(
+    athletes: List[AthleteInput],
+    event_id: Optional[int] = Query(None),
+    db: Session = Depends(get_db),
+):
     """Categorize an array of athletes (tested up to 2000+)."""
     if len(athletes) > 5000:
         raise HTTPException(400, "Maximum 5000 athletes per request")
-    return categorize_bulk(athletes)
+    cfg = _resolve_event_config(db, event_id)
+    return categorize_bulk(athletes, config=cfg)
 
 
 # ============================================================
@@ -141,7 +179,11 @@ def categorize_many(athletes: List[AthleteInput]):
 # ============================================================
 
 @api_router.post("/upload/excel")
-async def upload_excel(file: UploadFile = File(...)):
+async def upload_excel(
+    file: UploadFile = File(...),
+    event_id: Optional[int] = Query(None),
+    db: Session = Depends(get_db),
+):
     """Upload Excel (.xlsx, .xls) or CSV file with smart column auto-detection."""
     filename = file.filename or "upload.xlsx"
     if not filename.lower().endswith((".xlsx", ".xls", ".csv")):
@@ -155,7 +197,8 @@ async def upload_excel(file: UploadFile = File(...)):
     except Exception as e:
         raise HTTPException(400, f"Error processing file: {str(e)}")
 
-    categorized = categorize_bulk(athletes_input)
+    cfg = _resolve_event_config(db, event_id)
+    categorized = categorize_bulk(athletes_input, config=cfg)
 
     return {
         "filename": filename,
@@ -288,17 +331,56 @@ class CreateEventRequest(BaseModel):
     name: str
     event_date: str = "2026-10-24"
     location: Optional[str] = "State Sports Complex"
+    rule_profile: Optional[str] = "tourn2026"
+    rules: Optional[Dict[str, Any]] = None
 
 
 @api_router.post("/events")
 def add_event(req: CreateEventRequest, db: Session = Depends(get_db)):
-    """Create a new tournament event."""
-    return create_event(db, name=req.name, event_date=req.event_date, location=req.location or "")
+    """Create a new isolated tournament event with its own rules snapshot."""
+    return create_event(
+        db,
+        name=req.name,
+        event_date=req.event_date,
+        location=req.location or "",
+        rule_profile=req.rule_profile or "tourn2026",
+        rules=req.rules,
+    )
+
+
+@api_router.get("/events/{event_id}/rules")
+def get_scoped_event_rules(event_id: int, db: Session = Depends(get_db)):
+    """Retrieve the rules snapshot scoped strictly to this competition."""
+    ev = get_event_by_id(db, event_id)
+    if not ev:
+        raise HTTPException(404, "Competition event not found")
+    return _resolve_event_config(db, event_id) or get_active_rules()
+
+
+@api_router.post("/events/{event_id}/rules")
+@api_router.put("/events/{event_id}/rules")
+def set_scoped_event_rules(event_id: int, new_rules: Dict[str, Any], db: Session = Depends(get_db)):
+    """Persist custom rules scoped strictly to a specific competition."""
+    updated = save_event_rules(db, event_id, new_rules)
+    if updated is None:
+        raise HTTPException(404, "Competition event not found")
+    return {"message": "Competition rules updated successfully", "rules": updated}
+
+
+@api_router.delete("/events/{event_id}")
+def remove_event(event_id: int, db: Session = Depends(get_db)):
+    """Delete a specific competition and all of its scoped athlete records."""
+    success = delete_event(db, event_id)
+    if not success:
+        raise HTTPException(404, "Competition event not found")
+    return {"message": "Competition deleted successfully", "event_id": event_id}
 
 
 @api_router.get("/events/{event_id}/athletes")
 def get_event_athletes(event_id: int, db: Session = Depends(get_db)):
-    """Retrieve all saved athletes for an event."""
+    """Retrieve all saved athletes strictly for an event."""
+    if not get_event_by_id(db, event_id):
+        raise HTTPException(404, "Competition event not found")
     athletes = get_athletes_from_event(db, event_id)
     return {
         "event_id": event_id,
@@ -315,7 +397,10 @@ class SaveAthletesRequest(BaseModel):
 @api_router.post("/events/{event_id}/athletes")
 def save_event_athletes(event_id: int, req: SaveAthletesRequest, db: Session = Depends(get_db)):
     """Persist categorized athletes into SQLite database for an event."""
-    saved_count = save_athletes_to_event(db, event_id, req.athletes, replace=req.replace)
+    try:
+        saved_count = save_athletes_to_event(db, event_id, req.athletes, replace=req.replace)
+    except ValueError:
+        raise HTTPException(404, "Competition event not found")
     return {
         "message": f"Successfully saved {saved_count} athletes",
         "saved_count": saved_count
@@ -325,6 +410,8 @@ def save_event_athletes(event_id: int, req: SaveAthletesRequest, db: Session = D
 @api_router.delete("/events/{event_id}/athletes")
 def clear_athletes(event_id: int, db: Session = Depends(get_db)):
     """Clear all athletes in a specific event."""
+    if not get_event_by_id(db, event_id):
+        raise HTTPException(404, "Competition event not found")
     deleted_count = clear_event_athletes(db, event_id)
     return {"message": f"Deleted {deleted_count} athletes"}
 

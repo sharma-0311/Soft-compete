@@ -83,6 +83,8 @@ export interface TournamentEvent {
   name: string;
   event_date: string;
   location?: string;
+  rule_profile?: string;
+  rules?: RulesConfig | null;
   athletes_count?: number;
   created_at?: string;
 }
@@ -105,8 +107,9 @@ export async function fetchDemo(): Promise<{ total: number; athletes: Categorize
 }
 
 // 3. Generate realistic sample athletes (100 to 2000)
-export async function generateSampleAthletes(count: number = 500): Promise<{ total: number; athletes: CategorizedAthlete[] }> {
-  const res = await fetch(apiUrl("/sample/generate"), {
+export async function generateSampleAthletes(count: number = 500, eventId?: number): Promise<{ total: number; athletes: CategorizedAthlete[] }> {
+  const query = eventId && eventId > 0 ? `?event_id=${eventId}` : "";
+  const res = await fetch(apiUrl(`/sample/generate${query}`), {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ count }),
@@ -141,7 +144,7 @@ export async function categorizeBulk(athletes: AthleteInput[]): Promise<Categori
 }
 
 // 6. Excel/CSV upload
-export async function uploadExcel(file: File): Promise<{
+export async function uploadExcel(file: File, eventId?: number): Promise<{
   filename: string;
   total_processed: number;
   errors: string[];
@@ -149,7 +152,8 @@ export async function uploadExcel(file: File): Promise<{
 }> {
   const form = new FormData();
   form.append("file", file);
-  const res = await fetch(apiUrl("/upload/excel"), {
+  const query = eventId && eventId > 0 ? `?event_id=${eventId}` : "";
+  const res = await fetch(apiUrl(`/upload/excel${query}`), {
     method: "POST",
     body: form,
   });
@@ -198,21 +202,51 @@ export async function resetRules(): Promise<RulesConfig> {
   return data.rules;
 }
 
-// 9. Events API
+// 9. Events API (strictly scoped per competition/event)
 export async function fetchEvents(): Promise<TournamentEvent[]> {
   const res = await fetch(apiUrl("/events"), { cache: "no-store" });
   if (!res.ok) throw new Error("Failed to fetch events");
   return res.json();
 }
 
-export async function createTournamentEvent(name: string, event_date: string = "2026-10-24", location: string = ""): Promise<TournamentEvent> {
+export async function createTournamentEvent(
+  name: string,
+  event_date: string = "2026-10-24",
+  location: string = "",
+  rule_profile: string = "tourn2026",
+  rules?: RulesConfig
+): Promise<TournamentEvent> {
   const res = await fetch(apiUrl("/events"), {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ name, event_date, location }),
+    body: JSON.stringify({ name, event_date, location, rule_profile, rules }),
   });
   if (!res.ok) throw new Error("Failed to create tournament event");
   return res.json();
+}
+
+export async function deleteTournamentEvent(eventId: number): Promise<void> {
+  const res = await fetch(apiUrl(`/events/${eventId}`), {
+    method: "DELETE",
+  });
+  if (!res.ok) throw new Error("Failed to delete tournament event");
+}
+
+export async function fetchEventRules(eventId: number): Promise<RulesConfig> {
+  const res = await fetch(apiUrl(`/events/${eventId}/rules`), { cache: "no-store" });
+  if (!res.ok) throw new Error("Failed to fetch competition rules");
+  return res.json();
+}
+
+export async function saveEventRules(eventId: number, rules: RulesConfig): Promise<RulesConfig> {
+  const res = await fetch(apiUrl(`/events/${eventId}/rules`), {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(rules),
+  });
+  if (!res.ok) throw new Error("Failed to save competition rules");
+  const data = await res.json();
+  return data.rules;
 }
 
 export async function fetchEventAthletes(eventId: number): Promise<CategorizedAthlete[]> {

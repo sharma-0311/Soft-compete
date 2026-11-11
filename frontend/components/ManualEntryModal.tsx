@@ -17,6 +17,7 @@ interface ManualEntryModalProps {
   existingClubs?: string[];
   existingAthletes?: CategorizedAthlete[];
   rules?: RulesConfig;
+  eventName?: string;
 }
 
 interface GridRow {
@@ -45,6 +46,7 @@ export const ManualEntryModal: React.FC<ManualEntryModalProps> = ({
   existingClubs = [],
   existingAthletes = [],
   rules = DEFAULT_RULES,
+  eventName,
 }) => {
   const [activeTab, setActiveTab] = useState<"single" | "grid">("single");
 
@@ -262,9 +264,16 @@ export const ManualEntryModal: React.FC<ManualEntryModalProps> = ({
         {/* 1. Drawer Header */}
         <div className="px-6 pt-5 pb-4 border-b border-border/70 shrink-0">
           <div className="flex items-center justify-between">
-            <h2 className="font-display text-2xl font-bold tracking-tight text-foreground">
-              Add athlete
-            </h2>
+            <div>
+              <h2 className="font-display text-2xl font-bold tracking-tight text-foreground">
+                Add athlete
+              </h2>
+              {eventName && (
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Competition: <span className="font-semibold text-primary">{eventName}</span>
+                </p>
+              )}
+            </div>
             <button
               type="button"
               onClick={onClose}
@@ -284,7 +293,7 @@ export const ManualEntryModal: React.FC<ManualEntryModalProps> = ({
               onClick={() => setActiveTab("single")}
               title="Add one athlete at a time with instant category preview"
               className={`px-3.5 py-1.5 rounded-lg text-sm font-medium transition-colors ${activeTab === "single"
-                ? "bg-primary text-primary-foreground shadow-xs"
+                ? "bg-primary text-primary-foreground shadow-sm"
                 : "border border-border bg-card text-foreground hover:bg-muted"
                 }`}
             >
@@ -295,7 +304,7 @@ export const ManualEntryModal: React.FC<ManualEntryModalProps> = ({
               onClick={() => setActiveTab("grid")}
               title="Add multiple athletes together in a structured spreadsheet grid"
               className={`px-3.5 py-1.5 rounded-lg text-sm font-medium transition-colors ${activeTab === "grid"
-                ? "bg-primary text-primary-foreground shadow-xs"
+                ? "bg-primary text-primary-foreground shadow-sm"
                 : "border border-border bg-card text-foreground hover:bg-muted"
                 }`}
             >

@@ -8,12 +8,16 @@ interface ExcelUploadModalProps {
   isOpen: boolean;
   onClose: () => void;
   onAthletesImported: (athletes: CategorizedAthlete[], filename: string) => void;
+  eventId?: number;
+  eventName?: string;
 }
 
 export const ExcelUploadModal: React.FC<ExcelUploadModalProps> = ({
   isOpen,
   onClose,
   onAthletesImported,
+  eventId,
+  eventName,
 }) => {
   const [dragActive, setDragActive] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -35,7 +39,7 @@ export const ExcelUploadModal: React.FC<ExcelUploadModalProps> = ({
     setParsedData(null);
 
     try {
-      const data = await uploadExcel(file);
+      const data = await uploadExcel(file, eventId);
       setParsedData({
         file: file.name,
         athletes: data.athletes,
@@ -101,7 +105,13 @@ export const ExcelUploadModal: React.FC<ExcelUploadModalProps> = ({
             Import Excel / CSV
           </h2>
           <p className="text-xs text-muted-foreground mt-0.5">
-            Auto-detects columns: Name, DOB, Gender, Weight, Height, Club
+            {eventName ? (
+              <>
+                Importing into: <span className="font-semibold text-primary">{eventName}</span> • Auto-detects Name, DOB, Gender, Weight, Height, Club
+              </>
+            ) : (
+              "Auto-detects columns: Name, DOB, Gender, Weight, Height, Club"
+            )}
           </p>
         </div>
 
