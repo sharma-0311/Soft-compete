@@ -389,12 +389,8 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col font-sans transition-colors selection:bg-primary selection:text-primary-foreground relative overflow-x-clip">
-      {/* Unified Taekwondo Top Hero Artwork Backdrop spanning seamlessly behind Top Bar + Title */}
-      <div
-        className={`pointer-events-none absolute top-0 inset-x-0 overflow-hidden transition-all ${
-          currentTab === "athletes" ? "h-[210px] sm:h-[200px]" : "h-16"
-        }`}
-      >
+      {/* Unified Taekwondo Top Hero Artwork Backdrop shown cleanly across all workspace tabs */}
+      <div className="pointer-events-none absolute top-0 inset-x-0 h-[210px] sm:h-[200px] overflow-hidden">
         <div className="max-w-[1400px] mx-auto relative h-full">
           <img
             src="/tkd-hero-banner.jpg"
@@ -437,7 +433,7 @@ export default function HomePage() {
         {currentTab === "athletes" && (
           <div className="space-y-4">
             {/* Operational Hero Header matching Reference Layout */}
-            <section className="relative py-2">
+            <section className="relative z-30 py-2">
               <div className="relative z-10 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
                 {/* Left: Event Venue, Date & Tournament Title */}
                 <div className="space-y-1 max-w-2xl">
@@ -523,60 +519,66 @@ export default function HomePage() {
                     </button>
 
                     {showActionsDropdown && (
-                      <div
-                        onClick={() => setShowActionsDropdown(false)}
-                        className="absolute right-0 mt-1.5 w-60 rounded-xl border border-border bg-popover text-popover-foreground shadow-lg py-1.5 z-40 text-xs font-medium"
-                      >
-                        <button
-                          type="button"
-                          onClick={() => handleLoadDemo()}
-                          title="Load 11 reference sample athletes"
-                          className="w-full px-3 py-2 text-left hover:bg-muted flex items-center gap-2"
+                      <>
+                        <div
+                          className="fixed inset-0 z-40"
+                          onClick={() => setShowActionsDropdown(false)}
+                        />
+                        <div
+                          onClick={() => setShowActionsDropdown(false)}
+                          className="absolute right-0 mt-1.5 w-60 rounded-xl border border-border bg-card text-foreground shadow-xl py-1.5 z-50 text-xs font-medium"
                         >
-                          <Sparkles className="h-3.5 w-3.5 text-warning" />
-                          <span>Load 11 Reference Athletes</span>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={handleGenerate500}
-                          title="Generate 500 synthetic athletes to test scale and exports"
-                          className="w-full px-3 py-2 text-left hover:bg-muted flex items-center gap-2"
-                        >
-                          <RefreshCw className="h-3.5 w-3.5 text-primary" />
-                          <span>Stress Test (500 Athletes)</span>
-                        </button>
-                        <div className="my-1 border-t border-border" />
-                        <button
-                          type="button"
-                          onClick={handleExportExcel}
-                          disabled={!athletes.length}
-                          title="Download categorized Excel workbook (.xlsx)"
-                          className="w-full px-3 py-2 text-left hover:bg-muted flex items-center gap-2 disabled:opacity-45 disabled:cursor-not-allowed"
-                        >
-                          <FileSpreadsheet className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
-                          <span>Export Excel (.xlsx)</span>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={handleExportCsv}
-                          disabled={!athletes.length}
-                          title="Download roster as CSV file"
-                          className="w-full px-3 py-2 text-left hover:bg-muted flex items-center gap-2 disabled:opacity-45 disabled:cursor-not-allowed"
-                        >
-                          <Download className="h-3.5 w-3.5 text-muted-foreground" />
-                          <span>Export CSV</span>
-                        </button>
-                        <div className="my-1 border-t border-border" />
-                        <button
-                          type="button"
-                          onClick={handleSyncToDatabase}
-                          title="Save current roster to backend database"
-                          className="w-full px-3 py-2 text-left hover:bg-muted flex items-center gap-2 text-emerald-600 dark:text-emerald-400"
-                        >
-                          <Database className="h-3.5 w-3.5" />
-                          <span>Sync Roster to Database</span>
-                        </button>
-                      </div>
+                          <button
+                            type="button"
+                            onClick={() => handleLoadDemo()}
+                            title="Load 11 reference sample athletes"
+                            className="w-full px-3 py-2 text-left hover:bg-muted flex items-center gap-2"
+                          >
+                            <Sparkles className="h-3.5 w-3.5 text-warning" />
+                            <span>Load 11 Reference Athletes</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={handleGenerate500}
+                            title="Generate 500 synthetic athletes to test scale and exports"
+                            className="w-full px-3 py-2 text-left hover:bg-muted flex items-center gap-2"
+                          >
+                            <RefreshCw className="h-3.5 w-3.5 text-primary" />
+                            <span>Stress Test (500 Athletes)</span>
+                          </button>
+                          <div className="my-1 border-t border-border" />
+                          <button
+                            type="button"
+                            onClick={handleExportExcel}
+                            disabled={!athletes.length}
+                            title="Download categorized Excel workbook (.xlsx)"
+                            className="w-full px-3 py-2 text-left hover:bg-muted flex items-center gap-2 disabled:opacity-45 disabled:cursor-not-allowed"
+                          >
+                            <FileSpreadsheet className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+                            <span>Export Excel (.xlsx)</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={handleExportCsv}
+                            disabled={!athletes.length}
+                            title="Download roster as CSV file"
+                            className="w-full px-3 py-2 text-left hover:bg-muted flex items-center gap-2 disabled:opacity-45 disabled:cursor-not-allowed"
+                          >
+                            <Download className="h-3.5 w-3.5 text-muted-foreground" />
+                            <span>Export CSV</span>
+                          </button>
+                          <div className="my-1 border-t border-border" />
+                          <button
+                            type="button"
+                            onClick={handleSyncToDatabase}
+                            title="Save current roster to backend database"
+                            className="w-full px-3 py-2 text-left hover:bg-muted flex items-center gap-2 text-emerald-600 dark:text-emerald-400"
+                          >
+                            <Database className="h-3.5 w-3.5" />
+                            <span>Sync Roster to Database</span>
+                          </button>
+                        </div>
+                      </>
                     )}
                   </div>
                 </div>

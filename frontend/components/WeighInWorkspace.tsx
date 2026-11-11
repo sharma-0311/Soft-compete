@@ -116,22 +116,23 @@ export const WeighInWorkspace: React.FC<WeighInWorkspaceProps> = ({
   }, [selectedAthlete, scaleInput]);
 
   return (
-    <div className="space-y-4 print:hidden">
+    <div className="space-y-5 print:hidden">
       {/* 1. Header Bar */}
-      <div className="flex flex-wrap items-end justify-between gap-3">
+      <div className="flex flex-wrap items-end justify-between gap-3 py-2">
         <div>
           <h1 className="font-display text-3xl font-bold uppercase tracking-wide text-foreground">
             Weigh-In
           </h1>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-sm text-muted-foreground mt-0.5">
             {eventTitle}. Official scale records are saved on this device.
           </p>
         </div>
         <button
+          type="button"
           onClick={onOpenPrint}
           disabled={!athletes.length}
           title={athletes.length ? "Open printable weigh-in roster sheet" : "Add athletes before printing weigh-in sheet"}
-          className="h-9 px-4 rounded-md border border-input bg-background hover:bg-muted font-medium text-foreground text-sm flex items-center gap-1.5 transition-colors disabled:opacity-50"
+          className="h-9 px-4 rounded-lg border border-border bg-card hover:bg-muted font-medium text-foreground text-sm flex items-center gap-1.5 transition-colors shadow-sm disabled:opacity-65 disabled:cursor-not-allowed"
         >
           <Printer className="h-4 w-4 text-primary" />
           <span>Print weigh-in sheet</span>
@@ -139,9 +140,10 @@ export const WeighInWorkspace: React.FC<WeighInWorkspaceProps> = ({
       </div>
 
       {/* 2. Filter Bar */}
-      <div className="flex flex-wrap items-center gap-3 rounded-lg border border-border bg-card p-3">
+      <div className="flex flex-wrap items-center gap-3 rounded-xl border border-border bg-card p-3.5 shadow-sm">
         <select
-          className="h-9 rounded-md border border-input bg-background px-2 text-sm text-foreground focus:outline-none"
+          title="Filter weigh-in list by division"
+          className="h-9 rounded-lg border border-input bg-background px-3 text-sm text-foreground focus:outline-none"
           value={filterDivision}
           onChange={(e) => setFilterDivision(e.target.value)}
         >
@@ -156,14 +158,15 @@ export const WeighInWorkspace: React.FC<WeighInWorkspaceProps> = ({
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
           <input
             type="text"
-            className="h-9 w-full rounded-md border border-input bg-background pl-8 pr-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+            className="h-9 w-full rounded-lg border border-input bg-background pl-8 pr-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
             placeholder="Search athlete, club, category"
+            title="Search athletes by name, club, or category"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
         </div>
 
-        <div className="ml-auto flex items-center gap-4 text-sm font-medium">
+        <div className="ml-auto flex items-center gap-5 text-sm font-medium">
           <span className="text-muted-foreground">
             Pending <b className="tabular-nums text-foreground">{pendingCount}</b>
           </span>
@@ -176,15 +179,15 @@ export const WeighInWorkspace: React.FC<WeighInWorkspaceProps> = ({
         </div>
       </div>
 
-      {/* 3. Split Screen Layout */}
-      <div className="grid gap-4 lg:grid-cols-[1fr_360px]">
-        {/* Left: Athletes Table */}
-        <div className="max-h-[65vh] overflow-auto rounded-lg border border-border bg-card">
+      {/* 3. Split Screen Layout with Generous Spacing between Records and Details */}
+      <div className="grid gap-6 lg:grid-cols-[1fr_390px]">
+        {/* Left: Athlete Records Table */}
+        <div className="max-h-[65vh] overflow-auto rounded-xl border border-border bg-card shadow-sm">
           <table className="w-full text-sm">
-            <thead className="sticky top-0 bg-muted text-xs uppercase text-muted-foreground font-semibold">
+            <thead className="sticky top-0 bg-muted/95 backdrop-blur-sm border-b border-border text-[11px] uppercase tracking-wider text-muted-foreground font-bold">
               <tr>
                 {["Sr", "Athlete", "Category", "Declared", "Scale", "Result"].map((h) => (
-                  <th key={h} className="px-3 py-2 text-left font-medium">
+                  <th key={h} className="px-4 py-3 text-left">
                     {h}
                   </th>
                 ))}
@@ -202,30 +205,32 @@ export const WeighInWorkspace: React.FC<WeighInWorkspaceProps> = ({
                   <tr
                     key={a.id || a.sr_no || a.name}
                     onClick={() => handleSelectAthlete(a)}
-                    className={`cursor-pointer border-t border-border hover:bg-muted/40 transition-colors ${
-                      isSelected ? "bg-accent/50" : ""
+                    className={`cursor-pointer border-t border-border/70 hover:bg-muted/40 transition-colors ${
+                      isSelected ? "bg-accent/55" : ""
                     }`}
                   >
-                    <td className="px-3 py-2 tabular-nums text-muted-foreground font-medium">
+                    <td className="px-4 py-3 tabular-nums text-muted-foreground font-medium">
                       {a.sr_no}
                     </td>
-                    <td className="px-3 py-2">
-                      <div className="font-medium text-foreground">{a.name}</div>
+                    <td className="px-4 py-3 space-y-0.5">
+                      <div className="font-semibold text-foreground">{a.name}</div>
                       <div className="text-xs text-muted-foreground">{a.club || "—"}</div>
                     </td>
-                    <td className="px-3 py-2 whitespace-nowrap">
-                      <DivisionBadge group={a.age_group} />
-                      <span className="ml-1.5 font-medium text-foreground">{a.weight_class}</span>
+                    <td className="px-4 py-3 whitespace-nowrap">
+                      <div className="inline-flex items-center gap-2">
+                        <DivisionBadge group={a.age_group} />
+                        <span className="font-medium text-foreground">{a.weight_class}</span>
+                      </div>
                     </td>
-                    <td className="px-3 py-2 tabular-nums font-medium text-foreground">
-                      {a.weight_kg != null ? a.weight_kg : "—"}
+                    <td className="px-4 py-3 tabular-nums font-medium text-foreground">
+                      {a.weight_kg != null ? `${a.weight_kg} kg` : "—"}
                     </td>
-                    <td className="px-3 py-2 tabular-nums font-bold text-foreground">
-                      {a.scale_weight_kg ?? "—"}
+                    <td className="px-4 py-3 tabular-nums font-bold text-foreground">
+                      {a.scale_weight_kg != null ? `${a.scale_weight_kg} kg` : "—"}
                     </td>
-                    <td className="px-3 py-2">
+                    <td className="px-4 py-3">
                       <span
-                        className={`rounded px-2 py-0.5 text-xs font-semibold uppercase tracking-wide ${badgeCls}`}
+                        className={`rounded-md px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wide ${badgeCls}`}
                       >
                         {a.weigh_in_status || "pending"}
                       </span>
@@ -236,7 +241,7 @@ export const WeighInWorkspace: React.FC<WeighInWorkspaceProps> = ({
 
               {filteredAthletes.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="px-3 py-16 text-center text-muted-foreground">
+                  <td colSpan={6} className="px-4 py-16 text-center text-muted-foreground">
                     No athletes in this selection.
                   </td>
                 </tr>
@@ -245,53 +250,55 @@ export const WeighInWorkspace: React.FC<WeighInWorkspaceProps> = ({
           </table>
         </div>
 
-        {/* Right: Scale Terminal Verification Card */}
-        <div className="h-fit rounded-lg border border-border bg-card p-4">
+        {/* Right: Scale Terminal Verification Details Card */}
+        <div className="h-fit rounded-xl border border-border bg-card p-5 sm:p-6 shadow-sm">
           {selectedAthlete ? (
-            <div className="space-y-3">
-              <div className="flex items-center gap-2">
-                <Scale className="h-5 w-5 text-primary" />
-                <h2 className="font-display text-xl font-bold uppercase text-foreground">
-                  {selectedAthlete.name}
-                </h2>
+            <div className="space-y-4">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <Scale className="h-5 w-5 text-primary shrink-0" />
+                  <h2 className="font-display text-xl font-bold uppercase text-foreground">
+                    {selectedAthlete.name}
+                  </h2>
+                </div>
+
+                <div className="text-sm text-muted-foreground flex items-center gap-2.5 pt-0.5">
+                  <span>{selectedAthlete.club || "Independent"}</span>
+                  <span>·</span>
+                  <DivisionBadge group={selectedAthlete.age_group} />
+                </div>
               </div>
 
-              <div className="text-sm text-muted-foreground flex items-center gap-2">
-                <span>{selectedAthlete.club || "Independent"}</span>
-                <span>·</span>
-                <DivisionBadge group={selectedAthlete.age_group} />
-              </div>
-
-              <dl className="grid grid-cols-2 gap-2 rounded bg-muted p-3 text-sm">
-                <div>
+              <dl className="grid grid-cols-2 gap-3 rounded-lg bg-muted/70 border border-border/60 p-3.5 text-sm">
+                <div className="space-y-0.5">
                   <dt className="text-xs text-muted-foreground">Declared</dt>
                   <dd className="font-semibold tabular-nums text-foreground">
                     {selectedAthlete.weight_kg != null ? `${selectedAthlete.weight_kg} kg` : "Height-based"}
                   </dd>
                 </div>
-                <div>
-                  <dt className="text-xs text-muted-foreground">Category</dt>
+                <div className="space-y-0.5">
+                  <dt className="text-xs text-muted-foreground">Assigned Category</dt>
                   <dd className="font-semibold text-foreground">
                     {selectedAthlete.weight_class}
                   </dd>
                 </div>
               </dl>
 
-              <div>
+              <div className="space-y-1.5">
                 <label className="block text-xs uppercase tracking-wide text-muted-foreground font-semibold">
                   Official scale weight (kg)
                 </label>
                 <input
                   autoFocus
                   inputMode="decimal"
-                  className="mt-1 h-14 w-full rounded-md border border-input bg-background text-center font-display text-3xl font-bold tabular-nums text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+                  className="h-14 w-full rounded-lg border border-input bg-background text-center font-display text-3xl font-bold tabular-nums text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
                   value={scaleInput}
                   onChange={(e) => setScaleInput(e.target.value)}
                 />
               </div>
 
               {weightDiff && (
-                <div className="rounded bg-warning/15 p-2 text-xs text-warning font-semibold flex items-center gap-1.5">
+                <div className="rounded-lg bg-warning/15 p-3 text-xs text-warning font-semibold flex items-center gap-2">
                   <AlertTriangle className="h-4 w-4 shrink-0" />
                   <span>
                     Differs from declared weight by {weightDiff} kg. Category is not changed automatically.
@@ -302,17 +309,17 @@ export const WeighInWorkspace: React.FC<WeighInWorkspaceProps> = ({
               <input
                 type="text"
                 placeholder="Correction reason / note (optional)"
-                className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+                className="h-9 w-full rounded-lg border border-input bg-background px-3 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
                 value={weighNote}
                 onChange={(e) => setWeighNote(e.target.value)}
               />
 
-              <div className="grid grid-cols-3 gap-2 pt-1">
+              <div className="grid grid-cols-3 gap-2.5 pt-1">
                 <button
                   type="button"
                   onClick={() => handleRecord("pass")}
                   title="Mark official scale weight as Passed and advance to next pending athlete"
-                  className="h-10 rounded-md bg-success text-primary-foreground hover:bg-success/90 font-display text-sm font-bold uppercase tracking-wide flex items-center justify-center gap-1 transition-colors shadow-xs"
+                  className="h-10 rounded-lg bg-success text-primary-foreground hover:bg-success/90 font-display text-sm font-bold uppercase tracking-wide flex items-center justify-center gap-1 transition-colors shadow-sm"
                 >
                   <CheckCircle2 className="h-4 w-4" />
                   <span>Pass</span>
@@ -322,7 +329,7 @@ export const WeighInWorkspace: React.FC<WeighInWorkspaceProps> = ({
                   type="button"
                   onClick={() => handleRecord("fail")}
                   title="Mark official scale weight as Failed / Overweight and advance"
-                  className="h-10 rounded-md bg-destructive text-destructive-foreground hover:bg-destructive/90 font-display text-sm font-bold uppercase tracking-wide flex items-center justify-center gap-1 transition-colors shadow-xs"
+                  className="h-10 rounded-lg bg-destructive text-destructive-foreground hover:bg-destructive/90 font-display text-sm font-bold uppercase tracking-wide flex items-center justify-center gap-1 transition-colors shadow-sm"
                 >
                   <XCircle className="h-4 w-4" />
                   <span>Fail</span>
@@ -332,7 +339,7 @@ export const WeighInWorkspace: React.FC<WeighInWorkspaceProps> = ({
                   type="button"
                   onClick={() => handleRecord("review")}
                   title="Flag athlete for Technical Official review"
-                  className="h-10 rounded-md bg-secondary text-secondary-foreground hover:bg-secondary/80 font-display text-sm font-bold uppercase tracking-wide transition-colors"
+                  className="h-10 rounded-lg bg-secondary text-secondary-foreground hover:bg-secondary/80 font-display text-sm font-bold uppercase tracking-wide transition-colors border border-border"
                 >
                   Review
                 </button>
@@ -343,7 +350,7 @@ export const WeighInWorkspace: React.FC<WeighInWorkspaceProps> = ({
               </p>
             </div>
           ) : (
-            <div className="py-16 text-center text-sm text-muted-foreground space-y-2">
+            <div className="py-16 text-center text-sm text-muted-foreground space-y-2.5">
               <Scale className="h-8 w-8 text-muted-foreground/60 mx-auto" />
               <p>Select an athlete to record an official measurement.</p>
             </div>

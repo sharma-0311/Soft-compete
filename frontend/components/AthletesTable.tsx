@@ -4,7 +4,7 @@ import React, { useState, useMemo } from "react";
 import {
   Search, ArrowUp, ArrowDown, ArrowUpDown, Pencil, Trash2,
   ChevronLeft, ChevronRight, AlertTriangle, CheckSquare, Square,
-  Check, X, FileSpreadsheet, Filter, Eye, ChevronDown
+  Check, X, FileSpreadsheet, Filter, ChevronDown
 } from "lucide-react";
 import { CategorizedAthlete, RulesConfig } from "@/lib/api";
 import { categorizeAthleteClient, DEFAULT_RULES, formatDisplayDate } from "@/lib/rules";
@@ -388,8 +388,8 @@ export const AthletesTable: React.FC<AthletesTableProps> = ({
 
       {/* Expandable Filter Controls Strip */}
       {showFilters && (
-        <div className="flex flex-wrap items-center gap-4 border-b border-border bg-muted/25 px-4 py-2.5 text-xs">
-          <div className="flex items-center gap-1.5">
+        <div className="flex flex-wrap items-center gap-5 border-b border-border bg-muted/25 px-4 py-3.5 text-xs">
+          <div className="flex items-center gap-2">
             <span className="font-semibold text-muted-foreground uppercase tracking-wider text-[11px]">
               Gender:
             </span>
@@ -466,7 +466,7 @@ export const AthletesTable: React.FC<AthletesTableProps> = ({
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-border text-left text-[11px] uppercase tracking-wider font-bold text-muted-foreground bg-muted/75">
-              <th className="w-9 px-3 py-2.5">
+              <th className="w-10 px-4 py-3">
                 <button
                   type="button"
                   onClick={handleToggleSelectAll}
@@ -486,7 +486,7 @@ export const AthletesTable: React.FC<AthletesTableProps> = ({
                 </button>
               </th>
               {TABLE_COLUMNS.map((col) => (
-                <th key={col.key} className="whitespace-nowrap px-3 py-2.5 font-semibold">
+                <th key={col.key} className="whitespace-nowrap px-4 py-3 font-semibold">
                   <button
                     type="button"
                     title={col.tip}
@@ -506,7 +506,7 @@ export const AthletesTable: React.FC<AthletesTableProps> = ({
                   </button>
                 </th>
               ))}
-              <th className="px-3 py-2.5 text-right font-semibold">Actions</th>
+              <th className="px-4 py-3 text-right font-semibold">Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -530,7 +530,7 @@ export const AthletesTable: React.FC<AthletesTableProps> = ({
                   }`}
                 >
                   {/* Select Checkbox */}
-                  <td className="px-3 py-2">
+                  <td className="px-4 py-3">
                     <button
                       type="button"
                       onClick={() => handleToggleRow(rowKey)}
@@ -547,12 +547,12 @@ export const AthletesTable: React.FC<AthletesTableProps> = ({
                   </td>
 
                   {/* 1. Sr. */}
-                  <td className="px-3 py-2 tabular-nums text-muted-foreground font-medium">
+                  <td className="px-4 py-3 tabular-nums text-muted-foreground font-medium">
                     {a.sr_no || validPage * pageSize + idx + 1}
                   </td>
 
                   {/* 2. Name (Inline Input when Editing) */}
-                  <td className="px-2.5 py-2 font-medium text-foreground">
+                  <td className="px-4 py-3 font-medium text-foreground">
                     {isEditing ? (
                       <input
                         type="text"
@@ -580,7 +580,7 @@ export const AthletesTable: React.FC<AthletesTableProps> = ({
                   </td>
 
                   {/* 3. Gender (Inline Toggle when Editing) */}
-                  <td className="px-2.5 py-2 font-semibold">
+                  <td className="px-4 py-3 font-semibold">
                     {isEditing ? (
                       <button
                         type="button"
@@ -610,9 +610,9 @@ export const AthletesTable: React.FC<AthletesTableProps> = ({
                   </td>
 
                   {/* 4. Age / DOB (Inline DobInput with auto "/" when Editing) */}
-                  <td className="whitespace-nowrap px-2.5 py-2">
+                  <td className="whitespace-nowrap px-4 py-3">
                     {isEditing ? (
-                      <div className="flex items-center gap-1.5">
+                      <div className="flex items-center gap-2">
                         <DobInput
                           compact
                           value={editDraft.dob}
@@ -628,21 +628,21 @@ export const AthletesTable: React.FC<AthletesTableProps> = ({
                         )}
                       </div>
                     ) : (
-                      <>
+                      <div className="inline-flex items-baseline gap-1.5">
                         <span className="tabular-nums font-bold text-foreground">
                           {a.competition_age ?? a.calculated_age ?? "—"}
                         </span>
                         {a.dob && (
                           <span className="text-xs text-muted-foreground tabular-nums">
-                            {" "}/ {a.dob}
+                            / {a.dob}
                           </span>
                         )}
-                      </>
+                      </div>
                     )}
                   </td>
 
                   {/* 5. Weight (Optional Inline Input) */}
-                  <td className="px-2.5 py-2 tabular-nums font-medium text-foreground">
+                  <td className="px-4 py-3 tabular-nums font-medium text-foreground">
                     {isEditing ? (
                       <input
                         type="number"
@@ -662,7 +662,7 @@ export const AthletesTable: React.FC<AthletesTableProps> = ({
                   </td>
 
                   {/* 6. Height (Inline Input) */}
-                  <td className="px-2.5 py-2 tabular-nums text-muted-foreground">
+                  <td className="px-4 py-3 tabular-nums text-muted-foreground">
                     {isEditing ? (
                       <input
                         type="number"
@@ -682,12 +682,12 @@ export const AthletesTable: React.FC<AthletesTableProps> = ({
                   </td>
 
                   {/* 7. Assigned Category (Live-updating preview while Editing!) */}
-                  <td className="whitespace-nowrap px-3 py-2">
+                  <td className="whitespace-nowrap px-4 py-3">
                     {(() => {
                       const target = isEditing && inlinePreview ? inlinePreview : a;
                       const byHeightOnly = !target.weight_kg && Boolean(target.height_category);
                       return (
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2.5">
                           <DivisionBadge group={target.age_group} />
                           <span
                             className={`font-semibold ${
@@ -715,7 +715,7 @@ export const AthletesTable: React.FC<AthletesTableProps> = ({
                   </td>
 
                   {/* 8. Club (Inline Input when Editing) */}
-                  <td className="px-2.5 py-2 text-muted-foreground">
+                  <td className="px-4 py-3 text-muted-foreground">
                     {isEditing ? (
                       <input
                         type="text"
@@ -731,10 +731,10 @@ export const AthletesTable: React.FC<AthletesTableProps> = ({
                     )}
                   </td>
 
-                  {/* 9. Actions (Save/Cancel inline when Editing, Eye/Pencil/Trash otherwise) */}
-                  <td className="px-3 py-2 text-right whitespace-nowrap">
+                  {/* 9. Actions (Save/Cancel inline when Editing, Pencil/Trash otherwise) */}
+                  <td className="px-4 py-3 text-right whitespace-nowrap">
                     {isEditing ? (
-                      <div className="inline-flex items-center gap-1">
+                      <div className="inline-flex items-center gap-1.5">
                         <button
                           type="button"
                           onClick={() => saveInlineEdit(a)}
@@ -755,16 +755,7 @@ export const AthletesTable: React.FC<AthletesTableProps> = ({
                         </button>
                       </div>
                     ) : (
-                      <div className="inline-flex items-center gap-0.5">
-                        <button
-                          type="button"
-                          onClick={() => onEditAthlete(a)}
-                          title={`Inspect or edit full record for ${a.name}`}
-                          aria-label={`View details for ${a.name}`}
-                          className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted rounded transition-colors"
-                        >
-                          <Eye className="h-3.5 w-3.5" />
-                        </button>
+                      <div className="inline-flex items-center gap-1">
                         <button
                           type="button"
                           onClick={() => startInlineEdit(a, rowKey)}
@@ -792,7 +783,7 @@ export const AthletesTable: React.FC<AthletesTableProps> = ({
 
             {paginatedAthletes.length === 0 && (
               <tr>
-                <td colSpan={10} className="px-3 py-16 text-center text-muted-foreground">
+                <td colSpan={10} className="px-4 py-16 text-center text-muted-foreground">
                   No athletes found matching the active selection.
                 </td>
               </tr>
@@ -802,7 +793,7 @@ export const AthletesTable: React.FC<AthletesTableProps> = ({
       </div>
 
       {/* 3. Pagination Footer */}
-      <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 text-xs text-muted-foreground border-t border-border">
+      <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3.5 text-xs text-muted-foreground border-t border-border">
         <span className="tabular-nums">
           {filteredAthletes.length > 0
             ? `Showing ${validPage * pageSize + 1}–${Math.min(
