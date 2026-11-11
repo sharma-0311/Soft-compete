@@ -1,10 +1,11 @@
 "use client";
 
-import React, { useState, useMemo, useRef } from "react";
-import { Edit3, X, Calendar, Sparkles } from "lucide-react";
+import React, { useState, useMemo } from "react";
+import { Edit3, X } from "lucide-react";
 import { CategorizedAthlete } from "@/lib/api";
 import { categorizeAthleteClient, DEFAULT_RULES } from "@/lib/rules";
 import { DivisionBadge } from "@/components/DivisionBadge";
+import { DobInput } from "@/components/DobInput";
 
 interface EditAthleteModalProps {
   isOpen: boolean;
@@ -24,14 +25,16 @@ export const EditAthleteModal: React.FC<EditAthleteModalProps> = ({
   const [name, setName] = useState(athlete.name);
   const [dob, setDob] = useState(athlete.dob || "");
   const [gender, setGender] = useState<"M" | "F">(athlete.gender === "F" ? "F" : "M");
-  const [weight, setWeight] = useState(athlete.weight_kg ? athlete.weight_kg.toString() : "32");
+  const [weight, setWeight] = useState(
+    athlete.weight_kg != null ? athlete.weight_kg.toString() : ""
+  );
   const [height, setHeight] = useState(athlete.height_cm ? athlete.height_cm.toString() : "");
   const [club, setClub] = useState(athlete.club || "");
 
-  const datePickerRef = useRef<HTMLInputElement>(null);
-
   // Live Recategorization
   const liveRecat = useMemo(() => {
+    const parsedW = weight.trim() ? parseFloat(weight) : null;
+    const parsedH = height.trim() ? parseFloat(height) : null;
     return categorizeAthleteClient(
       {
         id: athlete.id,
@@ -39,8 +42,8 @@ export const EditAthleteModal: React.FC<EditAthleteModalProps> = ({
         name: name || athlete.name,
         dob: dob || null,
         gender,
-        weight_kg: parseFloat(weight) || athlete.weight_kg,
-        height_cm: height ? parseFloat(height) : null,
+        weight_kg: parsedW && parsedW > 0 ? parsedW : null,
+        height_cm: parsedH && parsedH > 0 ? parsedH : null,
         club: club || null,
       },
       DEFAULT_RULES
@@ -49,6 +52,7 @@ export const EditAthleteModal: React.FC<EditAthleteModalProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!weight.trim() && !height.trim()) return;
     onSave({
       ...athlete,
       ...liveRecat,
@@ -56,14 +60,6 @@ export const EditAthleteModal: React.FC<EditAthleteModalProps> = ({
       club: club.trim() || undefined,
     });
     onClose();
-  };
-
-  const handleCalendarPick = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = e.target.value;
-    if (val) {
-      const [y, m, d] = val.split("-");
-      setDob(`${d}/${m}/${y}`);
-    }
   };
 
   return (
@@ -83,6 +79,7 @@ export const EditAthleteModal: React.FC<EditAthleteModalProps> = ({
           </h2>
           <button
             onClick={onClose}
+            title="Close edit athlete modal"
             className="p-1 rounded text-muted-foreground hover:text-foreground transition-colors"
           >
             <X className="h-5 w-5" />
@@ -117,24 +114,26 @@ export const EditAthleteModal: React.FC<EditAthleteModalProps> = ({
                   <button
                     type="button"
                     onClick={() => setGender("M")}
+                    title="Select Male / Boy division"
                     className={`flex items-center justify-center gap-2 py-2 px-3 rounded-md border-2 font-display text-sm font-bold uppercase transition-all ${
                       gender === "M"
                         ? "border-male bg-male/15 text-male shadow-xs"
                         : "border-border text-muted-foreground hover:border-border/80 hover:text-foreground"
                     }`}
                   >
-                    <span>👦 MALE / BOY</span>
+                    <span>Male / Boy</span>
                   </button>
                   <button
                     type="button"
                     onClick={() => setGender("F")}
+                    title="Select Female / Girl division"
                     className={`flex items-center justify-center gap-2 py-2 px-3 rounded-md border-2 font-display text-sm font-bold uppercase transition-all ${
                       gender === "F"
                         ? "border-female bg-female/15 text-female shadow-xs"
                         : "border-border text-muted-foreground hover:border-border/80 hover:text-foreground"
                     }`}
                   >
-                    <span>👧 FEMALE / GIRL</span>
+                    <span>Female / Girl</span>
                   </button>
                 </div>
               </div>
@@ -145,33 +144,7 @@ export const EditAthleteModal: React.FC<EditAthleteModalProps> = ({
                   <label className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
                     DOB
                   </label>
-                  <div className="relative flex items-center">
-                    <input
-                      type="text"
-                      value={dob}
-                      onChange={(e) => setDob(e.target.value)}
-                      placeholder="DD/MM/YYYY"
-                      className="h-10 w-full rounded-md border border-input bg-background pl-3 pr-9 text-sm tabular-nums text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
-                    />
-                    <input
-                      ref={datePickerRef}
-                      type="date"
-                      onChange={handleCalendarPick}
-                      className="sr-only"
-                    />
-                    <button
-                      type="button"
-                      onClick={() =>
-                        datePickerRef.current?.showPicker
-                          ? datePickerRef.current.showPicker()
-                          : datePickerRef.current?.click()
-                      }
-                      title="Open calendar"
-                      className="absolute right-2 p-1 text-muted-foreground hover:text-primary rounded transition-colors"
-                    >
-                      <Calendar className="h-4 w-4" />
-                    </button>
-                  </div>
+                  <DobInput value={dob} onChange={setDob} />
                 </div>
 
                 <div className="grid gap-1">
@@ -191,28 +164,28 @@ export const EditAthleteModal: React.FC<EditAthleteModalProps> = ({
               <div className="grid grid-cols-2 gap-3">
                 <div className="grid gap-1">
                   <label className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                    Weight (kg) *
+                    Weight (kg) <span className="opacity-70">(optional)</span>
                   </label>
                   <input
                     type="number"
                     step="0.1"
-                    required
                     value={weight}
                     onChange={(e) => setWeight(e.target.value)}
+                    placeholder="Uses height if empty"
                     className="h-10 rounded-md border border-input bg-background px-3 text-sm font-bold tabular-nums text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
                   />
                 </div>
 
                 <div className="grid gap-1">
                   <label className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                    Height (cm) <span className="opacity-70">(Sub-Jr)</span>
+                    Height (cm)
                   </label>
                   <input
                     type="number"
                     step="0.5"
                     value={height}
                     onChange={(e) => setHeight(e.target.value)}
-                    placeholder="Sub-Jr only"
+                    placeholder="Fallback if no weight"
                     className="h-10 rounded-md border border-input bg-background px-3 text-sm tabular-nums text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
                   />
                 </div>
@@ -222,13 +195,16 @@ export const EditAthleteModal: React.FC<EditAthleteModalProps> = ({
               <div className="pt-2 flex gap-2">
                 <button
                   type="submit"
-                  className="h-10 flex-1 rounded-md bg-primary text-primary-foreground font-display text-sm font-bold uppercase tracking-wide hover:bg-primary/90 transition-colors shadow-xs"
+                  disabled={!name.trim() || (!weight.trim() && !height.trim())}
+                  title="Save changes and recalculate athlete category"
+                  className="h-10 flex-1 rounded-md bg-primary text-primary-foreground font-display text-sm font-bold uppercase tracking-wide hover:bg-primary/90 disabled:opacity-45 transition-colors shadow-xs"
                 >
                   Save Changes
                 </button>
                 <button
                   type="button"
                   onClick={onClose}
+                  title="Discard edits and close modal"
                   className="h-10 px-4 rounded-md border border-input bg-background text-foreground text-xs font-semibold hover:bg-muted transition-colors"
                 >
                   Cancel

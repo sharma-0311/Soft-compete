@@ -164,26 +164,72 @@ export function normalizeGender(val: any): string {
   return s.includes("F") ? "F" : "M";
 }
 
+const MONTHS: Record<string, number> = {
+  jan: 0, january: 0, feb: 1, february: 1, mar: 2, march: 2,
+  apr: 3, april: 3, may: 4, jun: 5, june: 5,
+  jul: 6, july: 6, aug: 7, august: 7, sep: 8, sept: 8, september: 8,
+  oct: 9, october: 9, nov: 10, november: 10, dec: 11, december: 11,
+};
+
 export function parseDateString(str: any): Date | null {
   if (!str) return null;
   if (str instanceof Date) return isNaN(str.getTime()) ? null : str;
 
   const s = String(str).trim();
   // YYYY-MM-DD
-  const isoMatch = s.match(/^(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})/);
+  const isoMatch = s.match(/^(\d{4})[-/.\s](\d{1,2})[-/.\s](\d{1,2})$/);
   if (isoMatch) {
-    const d = new Date(parseInt(isoMatch[1]), parseInt(isoMatch[2]) - 1, parseInt(isoMatch[3]));
-    if (!isNaN(d.getTime())) return d;
+    const y = parseInt(isoMatch[1], 10);
+    const m = parseInt(isoMatch[2], 10) - 1;
+    const day = parseInt(isoMatch[3], 10);
+    const d = new Date(y, m, day);
+    if (!isNaN(d.getTime()) && d.getFullYear() === y && d.getMonth() === m && d.getDate() === day) {
+      return d;
+    }
   }
 
-  // DD/MM/YYYY or DD-MM-YYYY
-  const dmyMatch = s.match(/^(\d{1,2})[-/.](\d{1,2})[-/.](\d{4})/);
+  // DD/MM/YYYY or DD-MM-YYYY or DD MM YYYY
+  const dmyMatch = s.match(/^(\d{1,2})[-/.\s](\d{1,2})[-/.\s](\d{4})$/);
   if (dmyMatch) {
-    const d = new Date(parseInt(dmyMatch[3]), parseInt(dmyMatch[2]) - 1, parseInt(dmyMatch[1]));
-    if (!isNaN(d.getTime())) return d;
+    const day = parseInt(dmyMatch[1], 10);
+    const m = parseInt(dmyMatch[2], 10) - 1;
+    const y = parseInt(dmyMatch[3], 10);
+    const d = new Date(y, m, day);
+    if (!isNaN(d.getTime()) && d.getFullYear() === y && d.getMonth() === m && d.getDate() === day) {
+      return d;
+    }
+  }
+
+  // DD Mon YYYY (e.g. "05 Feb 2013")
+  const textMatch = s.match(/^(\d{1,2})[\s-]+([a-zA-Z]+)[\s-]+(\d{4})$/);
+  if (textMatch) {
+    const m = MONTHS[textMatch[2].toLowerCase()];
+    if (m !== undefined) {
+      const day = parseInt(textMatch[1], 10);
+      const y = parseInt(textMatch[3], 10);
+      const d = new Date(y, m, day);
+      if (!isNaN(d.getTime()) && d.getFullYear() === y && d.getMonth() === m && d.getDate() === day) {
+        return d;
+      }
+    }
   }
 
   return null;
+}
+
+export function formatIsoDateLocal(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+export function formatDisplayDate(str: any): string {
+  const d = parseDateString(str);
+  if (!d) return str ? String(str) : "";
+  const day = String(d.getDate()).padStart(2, "0");
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  return `${day}/${m}/${d.getFullYear()}`;
 }
 
 export function calculateAge(dob: Date, eventDate: Date = new Date(2026, 9, 24)): number {
@@ -193,6 +239,21 @@ export function calculateAge(dob: Date, eventDate: Date = new Date(2026, 9, 24))
     age--;
   }
   return Math.max(0, age);
+}
+
+function matchHeightBracket(height: number, rules: RulesConfig): string {
+  for (const [minH, maxH, label] of rules.height_categories) {
+    if ((minH < height && height <= maxH) || (minH === 0 && height <= maxH)) {
+      return label;
+    }
+  }
+  if (rules.height_categories.length > 0) {
+    const last = rules.height_categories[rules.height_categories.length - 1];
+    const first = rules.height_categories[0];
+    if (height > last[0]) return `Over ${last[0]}cm`;
+    if (height < first[1]) return `Under ${first[1]}cm`;
+  }
+  return "Open Height";
 }
 
 export function categorizeAthleteClient(athlete: AthleteInput, rules: RulesConfig = DEFAULT_RULES): CategorizedAthlete {
@@ -228,42 +289,52 @@ export function categorizeAthleteClient(athlete: AthleteInput, rules: RulesConfi
     notes.push("Missing DOB and Age");
   }
 
-  // Weight class
-  const weight = Number(athlete.weight_kg) || 0;
-  let weightClass = "Open Weight";
-  const wClasses = rules.weight_classes[ageGroup]?.[genderNorm] || [];
-  for (const [minW, maxW, label] of wClasses) {
-    if ((minW < weight && weight <= maxW) || (minW === 0 && weight <= maxW)) {
-      weightClass = label;
-      break;
-    }
-  }
+  const rawWeight = athlete.weight_kg !== undefined && athlete.weight_kg !== null ? Number(athlete.weight_kg) : NaN;
+  const hasWeight = !isNaN(rawWeight) && rawWeight > 0;
+  const rawHeight = athlete.height_cm !== undefined && athlete.height_cm !== null ? Number(athlete.height_cm) : NaN;
+  const hasHeight = !isNaN(rawHeight) && rawHeight > 0;
 
-  // Height category (Sub-Jr only)
+  let weightClass = "Unassigned";
   let heightCat: string | null = null;
-  const height = athlete.height_cm ? Number(athlete.height_cm) : null;
-  if (height && ageGroup === "Sub-Jr") {
-    for (const [minH, maxH, label] of rules.height_categories) {
-      if ((minH < height && height <= maxH) || (minH === 0 && height <= maxH)) {
-        heightCat = label;
+  const genderLabel = genderNorm === "M" ? "Male" : "Female";
+  const parts: string[] = [ageGroup, genderLabel];
+
+  if (hasWeight) {
+    weightClass = "Open Weight";
+    const wClasses = rules.weight_classes[ageGroup]?.[genderNorm] || [];
+    for (const [minW, maxW, label] of wClasses) {
+      if ((minW < rawWeight && rawWeight <= maxW) || (minW === 0 && rawWeight <= maxW)) {
+        weightClass = label;
         break;
       }
     }
+    if (hasHeight && ageGroup === "Sub-Jr") {
+      heightCat = matchHeightBracket(rawHeight, rules);
+    }
+    parts.push(weightClass);
+    if (heightCat) parts.push(heightCat);
+  } else if (hasHeight) {
+    // Weight not provided: assign category based on height
+    heightCat = matchHeightBracket(rawHeight, rules);
+    weightClass = heightCat;
+    notes.push("Categorized by height (weight not provided)");
+    parts.push(heightCat);
+  } else {
+    weightClass = "Unassigned";
+    notes.push("Missing both weight and height");
+    parts.push(weightClass);
   }
 
-  const genderLabel = genderNorm === "M" ? "Male" : "Female";
-  const parts = [ageGroup, genderLabel, weightClass];
-  if (heightCat) parts.push(heightCat);
-
   return {
+    id: athlete.id,
     sr_no: athlete.sr_no,
     name: (athlete.name || "").trim().toUpperCase(),
     gender: genderNorm,
-    dob: dobObj ? dobObj.toISOString().split("T")[0] : (athlete.dob ? String(athlete.dob) : null),
+    dob: dobObj ? formatIsoDateLocal(dobObj) : (athlete.dob ? String(athlete.dob) : null),
     calculated_age: calculatedAge,
     age_group: ageGroup,
-    weight_kg: Math.round(weight * 10) / 10,
-    height_cm: height ? Math.round(height * 10) / 10 : null,
+    weight_kg: hasWeight ? Math.round(rawWeight * 10) / 10 : null,
+    height_cm: hasHeight ? Math.round(rawHeight * 10) / 10 : null,
     weight_class: weightClass,
     height_category: heightCat,
     full_category: parts.join(" | "),

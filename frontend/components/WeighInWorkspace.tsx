@@ -64,7 +64,9 @@ export const WeighInWorkspace: React.FC<WeighInWorkspaceProps> = ({
     setScaleInput(
       athlete.scale_weight_kg != null
         ? String(athlete.scale_weight_kg)
-        : String(athlete.weight_kg)
+        : athlete.weight_kg != null
+        ? String(athlete.weight_kg)
+        : ""
     );
     setWeighNote(athlete.weigh_in_notes ?? "");
   };
@@ -73,7 +75,7 @@ export const WeighInWorkspace: React.FC<WeighInWorkspaceProps> = ({
     if (!selectedAthlete) return;
 
     const parsedScale = parseFloat(scaleInput);
-    const validScale = isNaN(parsedScale) ? selectedAthlete.weight_kg : parsedScale;
+    const validScale = isNaN(parsedScale) ? (selectedAthlete.weight_kg ?? undefined) : parsedScale;
 
     const updated: CategorizedAthlete = {
       ...selectedAthlete,
@@ -103,7 +105,7 @@ export const WeighInWorkspace: React.FC<WeighInWorkspaceProps> = ({
 
   // Discrepancy warning
   const weightDiff = useMemo(() => {
-    if (!selectedAthlete || !scaleInput) return null;
+    if (!selectedAthlete || !scaleInput || selectedAthlete.weight_kg == null) return null;
     const val = parseFloat(scaleInput);
     if (isNaN(val)) return null;
     const diff = val - selectedAthlete.weight_kg;
@@ -128,6 +130,7 @@ export const WeighInWorkspace: React.FC<WeighInWorkspaceProps> = ({
         <button
           onClick={onOpenPrint}
           disabled={!athletes.length}
+          title={athletes.length ? "Open printable weigh-in roster sheet" : "Add athletes before printing weigh-in sheet"}
           className="h-9 px-4 rounded-md border border-input bg-background hover:bg-muted font-medium text-foreground text-sm flex items-center gap-1.5 transition-colors disabled:opacity-50"
         >
           <Printer className="h-4 w-4 text-primary" />
@@ -215,7 +218,7 @@ export const WeighInWorkspace: React.FC<WeighInWorkspaceProps> = ({
                       <span className="ml-1.5 font-medium text-foreground">{a.weight_class}</span>
                     </td>
                     <td className="px-3 py-2 tabular-nums font-medium text-foreground">
-                      {a.weight_kg}
+                      {a.weight_kg != null ? a.weight_kg : "—"}
                     </td>
                     <td className="px-3 py-2 tabular-nums font-bold text-foreground">
                       {a.scale_weight_kg ?? "—"}
@@ -263,7 +266,7 @@ export const WeighInWorkspace: React.FC<WeighInWorkspaceProps> = ({
                 <div>
                   <dt className="text-xs text-muted-foreground">Declared</dt>
                   <dd className="font-semibold tabular-nums text-foreground">
-                    {selectedAthlete.weight_kg} kg
+                    {selectedAthlete.weight_kg != null ? `${selectedAthlete.weight_kg} kg` : "Height-based"}
                   </dd>
                 </div>
                 <div>
@@ -308,6 +311,7 @@ export const WeighInWorkspace: React.FC<WeighInWorkspaceProps> = ({
                 <button
                   type="button"
                   onClick={() => handleRecord("pass")}
+                  title="Mark official scale weight as Passed and advance to next pending athlete"
                   className="h-10 rounded-md bg-success text-primary-foreground hover:bg-success/90 font-display text-sm font-bold uppercase tracking-wide flex items-center justify-center gap-1 transition-colors shadow-xs"
                 >
                   <CheckCircle2 className="h-4 w-4" />
@@ -317,6 +321,7 @@ export const WeighInWorkspace: React.FC<WeighInWorkspaceProps> = ({
                 <button
                   type="button"
                   onClick={() => handleRecord("fail")}
+                  title="Mark official scale weight as Failed / Overweight and advance"
                   className="h-10 rounded-md bg-destructive text-destructive-foreground hover:bg-destructive/90 font-display text-sm font-bold uppercase tracking-wide flex items-center justify-center gap-1 transition-colors shadow-xs"
                 >
                   <XCircle className="h-4 w-4" />
@@ -326,6 +331,7 @@ export const WeighInWorkspace: React.FC<WeighInWorkspaceProps> = ({
                 <button
                   type="button"
                   onClick={() => handleRecord("review")}
+                  title="Flag athlete for Technical Official review"
                   className="h-10 rounded-md bg-secondary text-secondary-foreground hover:bg-secondary/80 font-display text-sm font-bold uppercase tracking-wide transition-colors"
                 >
                   Review

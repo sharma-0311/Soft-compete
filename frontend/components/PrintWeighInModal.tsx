@@ -68,6 +68,7 @@ export const PrintWeighInModal: React.FC<PrintWeighInModalProps> = ({
 
             <button
               onClick={handlePrint}
+              title="Open system print dialog or save weigh-in sheet as PDF"
               className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs sm:text-sm font-bold shadow-md shadow-blue-600/20 transition-all flex items-center gap-1.5"
             >
               <Printer className="w-4 h-4" />
@@ -76,6 +77,7 @@ export const PrintWeighInModal: React.FC<PrintWeighInModalProps> = ({
 
             <button
               onClick={onClose}
+              title="Close print preview modal"
               className="p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors"
             >
               <X className="w-5 h-5" />
@@ -129,7 +131,9 @@ export const PrintWeighInModal: React.FC<PrintWeighInModalProps> = ({
                     <td className="p-2 border-r border-slate-300 text-center">{a.gender === "M" ? "Boy" : "Girl"}</td>
                     <td className="p-2 border-r border-slate-300 text-center font-semibold">{a.age_group}</td>
                     <td className="p-2 border-r border-slate-300 font-bold text-slate-900">{a.weight_class}</td>
-                    <td className="p-2 border-r border-slate-300 text-center font-mono">{a.weight_kg} kg</td>
+                    <td className="p-2 border-r border-slate-300 text-center font-mono">
+                      {a.weight_kg != null ? `${a.weight_kg} kg` : "—"}
+                    </td>
                     <td className="p-2 border-r border-slate-300 text-center font-mono">
                       {a.scale_weight_kg ? `${a.scale_weight_kg} kg` : ""}
                     </td>

@@ -229,8 +229,8 @@ export default function HomePage() {
       a.dob || "",
       a.calculated_age || "",
       a.age_group,
-      a.weight_kg,
-      a.height_cm || "",
+      a.weight_kg ?? "",
+      a.height_cm ?? "",
       `"${a.weight_class}"`,
       `"${a.height_category || ""}"`,
       `"${a.full_category}"`,
@@ -264,17 +264,33 @@ export default function HomePage() {
   }
 
   function handleUpdateAthlete(updated: CategorizedAthlete) {
-    setAthletes(athletes.map((a) => ((a.id || a.sr_no) === (updated.id || updated.sr_no) ? updated : a)));
+    setAthletes((prev) =>
+      prev.map((a) =>
+        (a.id ?? a.sr_no ?? a.name) === (updated.id ?? updated.sr_no ?? updated.name)
+          ? updated
+          : a
+      )
+    );
+    showToast(`Updated ${updated.name}`);
   }
 
   function handleDeleteAthlete(idOrSr: number | string) {
-    setAthletes(athletes.filter((a) => (a.id || a.sr_no) !== idOrSr && a.name !== idOrSr));
+    setAthletes((prev) => {
+      const next = prev.filter((a) => (a.id ?? a.sr_no ?? a.name) !== idOrSr && a.name !== idOrSr);
+      if (next.length === 0) localStorage.removeItem("tkd_athletes_roster_v2");
+      return next;
+    });
+    showToast("Removed athlete from roster");
   }
 
   function handleDeleteSelected(selectedKeys: (number | string)[]) {
     const set = new Set(selectedKeys);
-    setAthletes(athletes.filter((a) => !set.has(a.id || a.sr_no || a.name)));
-    showToast(`Deleted ${selectedKeys.length} Athletes`);
+    setAthletes((prev) => {
+      const next = prev.filter((a) => !set.has(a.id ?? a.sr_no ?? a.name));
+      if (next.length === 0) localStorage.removeItem("tkd_athletes_roster_v2");
+      return next;
+    });
+    showToast(`Deleted ${selectedKeys.length} athlete${selectedKeys.length === 1 ? "" : "s"}`);
   }
 
   function handleClearRoster() {
@@ -355,6 +371,7 @@ export default function HomePage() {
                 {/* 1. Primary Action: Add athletes */}
                 <button
                   onClick={() => setShowManualModal(true)}
+                  title="Open Add athlete drawer (Single or Quick Grid bulk entry)"
                   className="h-9 px-4 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 flex items-center gap-2 transition-colors shadow-xs"
                 >
                   <UserPlus className="h-4 w-4" />
@@ -364,6 +381,7 @@ export default function HomePage() {
                 {/* 2. Secondary Action: Import file */}
                 <button
                   onClick={() => setShowExcelModal(true)}
+                  title="Import athletes from Excel (.xlsx) or CSV spreadsheet"
                   className="h-9 px-3.5 rounded-lg border border-border bg-card hover:bg-muted text-sm font-medium text-foreground flex items-center gap-2 transition-colors shadow-xs"
                 >
                   <FileUp className="h-4 w-4 text-muted-foreground" />
@@ -374,7 +392,7 @@ export default function HomePage() {
                 <button
                   type="button"
                   disabled
-                  title="Scan form is currently disabled"
+                  title="Scan form (OCR image import) is currently disabled"
                   className="h-9 px-3.5 rounded-lg border border-border bg-card text-sm font-medium text-muted-foreground/70 flex items-center gap-2 shadow-xs opacity-60 cursor-not-allowed"
                 >
                   <Camera className="h-4 w-4" />
@@ -385,6 +403,7 @@ export default function HomePage() {
                 <button
                   onClick={() => setShowPrintModal(true)}
                   disabled={!athletes.length}
+                  title={athletes.length ? "Open printable official weigh-in sheet" : "Add athletes first to print weigh-in sheet"}
                   className="h-9 px-3.5 rounded-lg border border-border bg-card hover:bg-muted text-sm font-medium text-foreground flex items-center gap-2 transition-colors shadow-xs disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <Printer className="h-4 w-4 text-muted-foreground" />
@@ -395,6 +414,7 @@ export default function HomePage() {
                 <button
                   onClick={handleClearRoster}
                   disabled={!athletes.length}
+                  title={athletes.length ? "Clear all athletes from current roster" : "Roster is already empty"}
                   className="h-9 px-3 rounded-lg text-sm font-medium text-muted-foreground hover:text-destructive hover:bg-muted/60 flex items-center gap-1.5 transition-colors disabled:opacity-45 disabled:cursor-not-allowed"
                 >
                   <Eraser className="h-4 w-4" />
@@ -405,6 +425,7 @@ export default function HomePage() {
                 <div className="relative ml-auto">
                   <button
                     onClick={() => setShowActionsDropdown(!showActionsDropdown)}
+                    title="Demo loader, 500-athlete stress test, and database sync tools"
                     className="h-9 px-3 rounded-lg border border-border bg-card hover:bg-muted text-xs font-medium text-muted-foreground hover:text-foreground flex items-center gap-1.5 transition-colors shadow-xs"
                   >
                     <span>Tools</span>
@@ -418,6 +439,7 @@ export default function HomePage() {
                     >
                       <button
                         onClick={() => handleLoadDemo()}
+                        title="Load 11 reference sample athletes"
                         className="w-full px-3 py-2 text-left hover:bg-muted flex items-center gap-2"
                       >
                         <Sparkles className="h-3.5 w-3.5 text-warning" />
@@ -425,6 +447,7 @@ export default function HomePage() {
                       </button>
                       <button
                         onClick={handleGenerate500}
+                        title="Generate 500 synthetic athletes to test scale and exports"
                         className="w-full px-3 py-2 text-left hover:bg-muted flex items-center gap-2"
                       >
                         <RefreshCw className="h-3.5 w-3.5 text-primary" />
@@ -433,6 +456,7 @@ export default function HomePage() {
                       <div className="my-1 border-t border-border" />
                       <button
                         onClick={handleSyncToDatabase}
+                        title="Save current roster to backend database"
                         className="w-full px-3 py-2 text-left hover:bg-muted flex items-center gap-2 text-success"
                       >
                         <Database className="h-3.5 w-3.5" />
@@ -451,7 +475,7 @@ export default function HomePage() {
                   <AlertTriangle className="w-4 h-4 text-destructive shrink-0" />
                   <span>{error}</span>
                 </div>
-                <button onClick={() => setError(null)} className="font-bold underline">
+                <button onClick={() => setError(null)} title="Dismiss notification" className="font-bold underline">
                   Dismiss
                 </button>
               </div>
@@ -470,6 +494,7 @@ export default function HomePage() {
               filterAge={filterAge}
               setFilterAge={setFilterAge}
               onEditAthlete={(athlete) => setEditingAthlete(athlete)}
+              onUpdateAthlete={handleUpdateAthlete}
               onDeleteAthlete={handleDeleteAthlete}
               onDeleteSelected={handleDeleteSelected}
               onExportExcel={handleExportExcel}
@@ -510,6 +535,7 @@ export default function HomePage() {
         onAddAthlete={handleAddSingleAthlete}
         onAddBulkAthletes={handleAddBulkAthletes}
         existingClubs={Array.from(new Set(athletes.map((a) => a.club).filter(Boolean) as string[]))}
+        existingAthletes={athletes}
       />
 
       {/* Excel / CSV Drag & Drop Upload */}

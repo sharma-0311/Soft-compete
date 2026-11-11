@@ -58,6 +58,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             <nav className="hidden md:flex items-center gap-1">
               <button
                 onClick={() => onSelectTab("athletes")}
+                title="View, filter, edit, or delete registered athletes"
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
                   currentTab === "athletes"
                     ? "bg-muted text-foreground font-semibold shadow-xs"
@@ -73,6 +74,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 
               <button
                 onClick={() => onSelectTab("weighin")}
+                title="Record official athlete weights and verify eligibility"
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
                   currentTab === "weighin"
                     ? "bg-muted text-foreground font-semibold shadow-xs"
@@ -90,6 +92,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 
               <button
                 onClick={() => onSelectTab("reports")}
+                title="Preview, export, and print categorized competition sheets"
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
                   currentTab === "reports"
                     ? "bg-muted text-foreground font-semibold shadow-xs"
@@ -156,6 +159,7 @@ export const Navbar: React.FC<NavbarProps> = ({
         <nav className="flex md:hidden items-center gap-1 py-1.5 border-t border-border/60">
           <button
             onClick={() => onSelectTab("athletes")}
+            title="View, filter, edit, or delete registered athletes"
             className={`flex-1 flex items-center justify-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors ${
               currentTab === "athletes"
                 ? "bg-muted text-foreground font-semibold"
@@ -168,6 +172,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 
           <button
             onClick={() => onSelectTab("weighin")}
+            title="Record official athlete weights and verify eligibility"
             className={`flex-1 flex items-center justify-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors ${
               currentTab === "weighin"
                 ? "bg-muted text-foreground font-semibold"
@@ -180,6 +185,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 
           <button
             onClick={() => onSelectTab("reports")}
+            title="Preview, export, and print categorized competition sheets"
             className={`flex-1 flex items-center justify-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors ${
               currentTab === "reports"
                 ? "bg-muted text-foreground font-semibold"

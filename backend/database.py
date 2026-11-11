@@ -46,7 +46,7 @@ class AthleteModel(Base):
     dob = Column(String(50), nullable=True)
     calculated_age = Column(Integer, nullable=True)
     age_group = Column(String(50), nullable=False)
-    weight_kg = Column(Float, nullable=False)
+    weight_kg = Column(Float, nullable=True)
     height_cm = Column(Float, nullable=True)
     weight_class = Column(String(100), nullable=False)
     height_category = Column(String(100), nullable=True)
@@ -130,7 +130,7 @@ def save_athletes_to_event(db: Session, event_id: int, athletes_data: List[Dict[
             dob=str(a.get("dob")) if a.get("dob") else None,
             calculated_age=a.get("calculated_age"),
             age_group=a.get("age_group", "Unknown"),
-            weight_kg=float(a.get("weight_kg", 0)),
+            weight_kg=float(a["weight_kg"]) if a.get("weight_kg") is not None else None,
             height_cm=float(a.get("height_cm")) if a.get("height_cm") is not None else None,
             weight_class=a.get("weight_class", ""),
             height_category=a.get("height_category"),

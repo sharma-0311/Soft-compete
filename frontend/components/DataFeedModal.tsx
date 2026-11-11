@@ -121,7 +121,7 @@ export const DataFeedModal: React.FC<DataFeedModalProps> = ({
         payloadList = parsed;
       } else if (parsed.athletes && Array.isArray(parsed.athletes)) {
         payloadList = parsed.athletes;
-      } else if (parsed.name && parsed.weight_kg) {
+      } else if (parsed.name && (parsed.weight_kg != null || parsed.height_cm != null)) {
         payloadList = [parsed];
       } else {
         throw new Error("Payload must be an athlete object, array of athletes, or have an 'athletes' array.");
@@ -178,6 +178,7 @@ export const DataFeedModal: React.FC<DataFeedModalProps> = ({
 
           <button
             onClick={onClose}
+            title="Close JSON data feed modal"
             className="p-2 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-100 transition-colors"
           >
             <X className="w-5 h-5" />
@@ -192,18 +193,21 @@ export const DataFeedModal: React.FC<DataFeedModalProps> = ({
             <div className="flex items-center gap-2">
               <button
                 onClick={() => handleSelectTemplate("single")}
+                title="Load single athlete JSON payload template"
                 className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium rounded-lg transition-colors"
               >
                 Single Athlete
               </button>
               <button
                 onClick={() => handleSelectTemplate("multiple")}
+                title="Load multi-athlete array JSON payload template"
                 className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium rounded-lg transition-colors"
               >
                 Club Roster (4 Athletes)
               </button>
               <button
                 onClick={() => handleSelectTemplate("webhook")}
+                title="Load registration webhook envelope JSON template"
                 className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium rounded-lg transition-colors"
               >
                 Webhook Envelope
@@ -235,6 +239,7 @@ export const DataFeedModal: React.FC<DataFeedModalProps> = ({
                 {responseOutput && (
                   <button
                     onClick={handleCopy}
+                    title="Copy categorized JSON response to clipboard"
                     className="text-xs text-slate-500 hover:text-slate-800 flex items-center gap-1"
                   >
                     {copied ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
@@ -273,6 +278,7 @@ export const DataFeedModal: React.FC<DataFeedModalProps> = ({
             <button
               onClick={handleSendFeed}
               disabled={loading}
+              title="Send JSON payload to /categorize/bulk endpoint for live categorization"
               className="px-5 py-2.5 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-xs sm:text-sm font-bold shadow-md shadow-purple-600/20 transition-all flex items-center gap-2 disabled:opacity-50"
             >
               <Send className="w-4 h-4" />
@@ -282,6 +288,7 @@ export const DataFeedModal: React.FC<DataFeedModalProps> = ({
             {responseOutput && responseOutput.length > 0 && (
               <button
                 onClick={handleImportToTournament}
+                title={`Import ${responseOutput.length} categorized athlete(s) into active tournament roster`}
                 className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs sm:text-sm font-bold shadow-md shadow-emerald-600/20 transition-all flex items-center gap-2"
               >
                 <CheckCircle2 className="w-4 h-4" />

@@ -75,6 +75,7 @@ export const TournamentModal: React.FC<TournamentModalProps> = ({
 
           <button
             onClick={onClose}
+            title="Close new tournament wizard"
             className="p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors"
           >
             <X className="w-5 h-5" />
@@ -142,6 +143,7 @@ export const TournamentModal: React.FC<TournamentModalProps> = ({
               <button
                 type="button"
                 onClick={() => setStep(2)}
+                title="Proceed to Step 2: Select competition rules profile"
                 className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-xs flex items-center gap-1.5 transition-colors shadow-md"
               >
                 <span>Next: Choose Rules</span>
@@ -204,6 +206,7 @@ export const TournamentModal: React.FC<TournamentModalProps> = ({
               <button
                 type="button"
                 onClick={() => setStep(1)}
+                title="Return to Step 1: Event details"
                 className="px-4 py-2 border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-semibold"
               >
                 Back
@@ -211,6 +214,7 @@ export const TournamentModal: React.FC<TournamentModalProps> = ({
               <button
                 type="button"
                 onClick={() => setStep(3)}
+                title="Proceed to Step 3: Review and create tournament"
                 className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-xs flex items-center gap-1.5 transition-colors shadow-md"
               >
                 <span>Next: Review & Finish</span>
@@ -248,6 +252,7 @@ export const TournamentModal: React.FC<TournamentModalProps> = ({
               <button
                 type="button"
                 onClick={() => setStep(2)}
+                title="Return to Step 2: Competition rules"
                 className="px-4 py-2 border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-semibold"
               >
                 Back
@@ -256,6 +261,7 @@ export const TournamentModal: React.FC<TournamentModalProps> = ({
                 type="button"
                 disabled={loading}
                 onClick={handleCreate}
+                title="Create tournament and open its workspace"
                 className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-sm shadow-lg shadow-emerald-600/20 flex items-center gap-1.5 transition-all"
               >
                 {loading ? "Creating..." : "Launch Tournament Workspace"}

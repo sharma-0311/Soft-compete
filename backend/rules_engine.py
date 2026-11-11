@@ -34,7 +34,7 @@ class AthleteInput(BaseModel):
     dob: Optional[Any] = None                 # Can be date, str ("DD/MM/YYYY" or "YYYY-MM-DD"), or None
     age_years: Optional[int] = None           # Fallback if DOB missing
     gender: Any                               # "M", "F", "Male", "Female", etc.
-    weight_kg: float = Field(..., gt=0, le=250)
+    weight_kg: Optional[float] = Field(None, gt=0, le=250)
     height_cm: Optional[float] = Field(None, gt=30, le=260)
     club: Optional[str] = None
 
@@ -52,7 +52,7 @@ class CategorizedAthlete(BaseModel):
     dob: Optional[str] = None
     calculated_age: Optional[int] = None
     age_group: str
-    weight_kg: float
+    weight_kg: Optional[float] = None
     height_cm: Optional[float] = None
     weight_class: str
     height_category: Optional[str] = None
@@ -302,8 +302,8 @@ def parse_dob_string(dob_raw: Any) -> Optional[date]:
         except ValueError:
             pass
 
-    # Handle Indian / European format DD/MM/YYYY or DD-MM-YYYY
-    dmy_match = re.match(r"^(\d{1,2})[-/.](\d{1,2})[-/.](\d{4})", s)
+    # Handle Indian / European format DD/MM/YYYY, DD-MM-YYYY, or DD MM YYYY
+    dmy_match = re.match(r"^(\d{1,2})[-/.\s](\d{1,2})[-/.\s](\d{4})", s)
     if dmy_match:
         try:
             d, m, y = int(dmy_match.group(1)), int(dmy_match.group(2)), int(dmy_match.group(3))
@@ -311,8 +311,8 @@ def parse_dob_string(dob_raw: Any) -> Optional[date]:
         except ValueError:
             pass
 
-    # Try 2-digit year DD/MM/YY
-    dmy2_match = re.match(r"^(\d{1,2})[-/.](\d{1,2})[-/.](\d{2})$", s)
+    # Try 2-digit year DD/MM/YY or DD MM YY
+    dmy2_match = re.match(r"^(\d{1,2})[-/.\s](\d{1,2})[-/.\s](\d{2})$", s)
     if dmy2_match:
         try:
             d, m, yy = int(dmy2_match.group(1)), int(dmy2_match.group(2)), int(dmy2_match.group(3))
@@ -383,8 +383,13 @@ def get_weight_class(age_group: str, gender: str, weight: float, config: Optiona
     return "Open Weight"
 
 
-def get_height_category(height_cm: Optional[float], age_group: str, config: Optional[Dict[str, Any]] = None) -> Optional[str]:
-    if height_cm is None or age_group != "Sub-Jr":
+def get_height_category(
+    height_cm: Optional[float],
+    age_group: str,
+    config: Optional[Dict[str, Any]] = None,
+    force_fallback: bool = False
+) -> Optional[str]:
+    if height_cm is None or (age_group != "Sub-Jr" and not force_fallback):
         return None
 
     cfg = config or CURRENT_CONFIG
@@ -426,14 +431,26 @@ def categorize_athlete(
         age_group = AgeGroup.UNKNOWN
         notes.append("Missing DOB and Age")
 
-    weight_class = get_weight_class(age_group.value, gender_norm, athlete.weight_kg, config=cfg)
-    height_cat = get_height_category(athlete.height_cm, age_group.value, config=cfg)
-
-    # Clean display category
+    has_weight = athlete.weight_kg is not None and athlete.weight_kg > 0
+    has_height = athlete.height_cm is not None and athlete.height_cm > 0
     gender_label = "Male" if gender_norm == "M" else "Female"
-    full_cat_parts = [age_group.value, gender_label, weight_class]
-    if height_cat:
-        full_cat_parts.append(height_cat)
+
+    if has_weight:
+        weight_class = get_weight_class(age_group.value, gender_norm, athlete.weight_kg, config=cfg)
+        height_cat = get_height_category(athlete.height_cm, age_group.value, config=cfg)
+        full_cat_parts = [age_group.value, gender_label, weight_class]
+        if height_cat:
+            full_cat_parts.append(height_cat)
+    elif has_height:
+        height_cat = get_height_category(athlete.height_cm, age_group.value, config=cfg, force_fallback=True)
+        weight_class = height_cat or "By Height"
+        notes.append("Categorized by height (weight not provided)")
+        full_cat_parts = [age_group.value, gender_label, weight_class]
+    else:
+        height_cat = None
+        weight_class = "Unassigned"
+        notes.append("Missing both weight and height")
+        full_cat_parts = [age_group.value, gender_label, weight_class]
 
     return CategorizedAthlete(
         sr_no=athlete.sr_no,
@@ -442,8 +459,8 @@ def categorize_athlete(
         dob=dob_obj.isoformat() if dob_obj else (str(athlete.dob) if athlete.dob else None),
         calculated_age=calculated_age,
         age_group=age_group.value,
-        weight_kg=round(athlete.weight_kg, 1),
-        height_cm=round(athlete.height_cm, 1) if athlete.height_cm is not None else None,
+        weight_kg=round(athlete.weight_kg, 1) if has_weight else None,
+        height_cm=round(athlete.height_cm, 1) if has_height else None,
         weight_class=weight_class,
         height_category=height_cat,
         full_category=" | ".join(full_cat_parts),

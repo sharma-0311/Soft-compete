@@ -112,6 +112,7 @@ export const ReportsWorkspace: React.FC<ReportsWorkspaceProps> = ({
           <button
             onClick={onExportCsv}
             disabled={!athletes.length}
+            title={athletes.length ? "Download roster as CSV spreadsheet" : "Add athletes first to export CSV"}
             className="h-9 px-3 rounded-md border border-input bg-background hover:bg-muted font-medium text-foreground text-xs flex items-center gap-1.5 transition-colors disabled:opacity-50"
           >
             <span>CSV</span>
@@ -120,6 +121,7 @@ export const ReportsWorkspace: React.FC<ReportsWorkspaceProps> = ({
           <button
             onClick={onExportExcel}
             disabled={!athletes.length}
+            title={athletes.length ? "Download styled multi-sheet Excel (.xlsx) workbook" : "Add athletes first to export Excel"}
             className="h-9 px-4 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 font-display text-xs font-bold uppercase tracking-wide flex items-center gap-1.5 transition-colors disabled:opacity-50 shadow-xs"
           >
             <FileSpreadsheet className="h-4 w-4" />
@@ -132,6 +134,7 @@ export const ReportsWorkspace: React.FC<ReportsWorkspaceProps> = ({
       <div className="flex gap-1 rounded-md bg-muted p-1 w-fit">
         <button
           onClick={() => setActiveTab("categories")}
+          title="View athletes grouped by assigned competition category"
           className={`rounded px-3 py-1 font-display text-sm font-semibold uppercase tracking-wide transition-colors ${
             activeTab === "categories"
               ? "bg-primary text-primary-foreground shadow-xs"
@@ -142,6 +145,7 @@ export const ReportsWorkspace: React.FC<ReportsWorkspaceProps> = ({
         </button>
         <button
           onClick={() => setActiveTab("weighin")}
+          title="View official scale weights and pass/fail statuses"
           className={`rounded px-3 py-1 font-display text-sm font-semibold uppercase tracking-wide transition-colors ${
             activeTab === "weighin"
               ? "bg-primary text-primary-foreground shadow-xs"
@@ -152,6 +156,7 @@ export const ReportsWorkspace: React.FC<ReportsWorkspaceProps> = ({
         </button>
         <button
           onClick={() => setActiveTab("exceptions")}
+          title="Review uncategorized records or warnings requiring attention"
           className={`rounded px-3 py-1 font-display text-sm font-semibold uppercase tracking-wide transition-colors ${
             activeTab === "exceptions"
               ? "bg-primary text-primary-foreground shadow-xs"
@@ -162,6 +167,7 @@ export const ReportsWorkspace: React.FC<ReportsWorkspaceProps> = ({
         </button>
         <button
           onClick={() => setActiveTab("summary")}
+          title="View registration totals grouped by club and age division"
           className={`rounded px-3 py-1 font-display text-sm font-semibold uppercase tracking-wide transition-colors ${
             activeTab === "summary"
               ? "bg-primary text-primary-foreground shadow-xs"
@@ -192,7 +198,7 @@ export const ReportsWorkspace: React.FC<ReportsWorkspaceProps> = ({
                   a.name,
                   a.gender,
                   a.club || "—",
-                  `${a.weight_kg} kg`,
+                  a.weight_kg != null ? `${a.weight_kg} kg` : "—",
                 ])}
               />
             </section>
@@ -216,7 +222,7 @@ export const ReportsWorkspace: React.FC<ReportsWorkspaceProps> = ({
               a.sr_no,
               a.name,
               a.full_category,
-              `${a.weight_kg} kg`,
+              a.weight_kg != null ? `${a.weight_kg} kg` : "—",
               a.scale_weight_kg ? `${a.scale_weight_kg} kg` : "—",
               a.weigh_in_status,
               a.weigh_in_notes || "—",

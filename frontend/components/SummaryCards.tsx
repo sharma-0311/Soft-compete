@@ -95,6 +95,7 @@ export const SummaryCards: React.FC<SummaryCardsProps> = ({
       {/* 1. Total Athletes Card */}
       <div
         onClick={() => onSelectAgeGroup("All")}
+        title="Click to show all athletes across every age division"
         className="rounded-xl border border-border bg-card p-5 shadow-xs hover:border-border/80 transition-all cursor-pointer flex flex-col justify-between"
       >
         <div>
@@ -128,6 +129,7 @@ export const SummaryCards: React.FC<SummaryCardsProps> = ({
           <div
             key={div}
             onClick={() => onSelectAgeGroup(isSelected ? "All" : div)}
+            title={isSelected ? `Clear ${div} filter and show all athletes` : `Filter athletes table to ${div} division (${divTotal})`}
             className={`relative overflow-hidden rounded-xl border bg-card p-5 shadow-xs transition-all cursor-pointer flex flex-col justify-between ${
               isSelected
                 ? "border-primary ring-1 ring-primary/40"

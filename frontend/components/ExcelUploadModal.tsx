@@ -89,6 +89,7 @@ export const ExcelUploadModal: React.FC<ExcelUploadModalProps> = ({
         {/* Close Button */}
         <button
           onClick={onClose}
+          title="Close import modal"
           className="absolute top-4 right-4 p-1 rounded text-muted-foreground hover:text-foreground transition-colors"
         >
           <X className="h-5 w-5" />
@@ -145,6 +146,7 @@ export const ExcelUploadModal: React.FC<ExcelUploadModalProps> = ({
         <button
           type="button"
           onClick={downloadSampleTemplate}
+          title="Download sample CSV roster template with valid column headers"
           className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1.5 transition-colors"
         >
           <Download className="h-3.5 w-3.5 text-primary" />
@@ -195,6 +197,7 @@ export const ExcelUploadModal: React.FC<ExcelUploadModalProps> = ({
             <button
               type="button"
               disabled={!parsedData.athletes.length}
+              title={`Import ${parsedData.athletes.length} categorized athletes into the tournament roster`}
               onClick={() => {
                 onAthletesImported(parsedData.athletes, parsedData.file);
                 onClose();

@@ -88,8 +88,8 @@ def parse_excel_or_csv(file_bytes: bytes, filename: str) -> Tuple[List[AthleteIn
     cols_present = set(df.columns)
     if "name" not in cols_present:
         raise ValueError(f"Missing required 'Name' column. Found columns: {list(df.columns)}")
-    if "weight" not in cols_present:
-        raise ValueError(f"Missing required 'Weight' column. Found columns: {list(df.columns)}")
+    if "weight" not in cols_present and "height" not in cols_present:
+        raise ValueError(f"Missing 'Weight' or 'Height' column. Found columns: {list(df.columns)}")
 
     for idx, row in df.iterrows():
         row_num = idx + 2  # Excel 1-indexed + header
@@ -98,33 +98,36 @@ def parse_excel_or_csv(file_bytes: bytes, filename: str) -> Tuple[List[AthleteIn
             if not name_val or name_val.lower() == "nan":
                 continue  # skip blank rows
 
-            # Weight
-            raw_w = row.get("weight")
-            if pd.isna(raw_w) or str(raw_w).strip() == "":
-                errors.append(f"Row {row_num} ({name_val}): Missing weight value")
-                continue
-            try:
-                # Clean strings like "32.5 kg"
-                clean_w_str = re.sub(r"[^\d.]", "", str(raw_w))
-                weight_val = float(clean_w_str)
-                if weight_val <= 0 or weight_val > 250:
-                    errors.append(f"Row {row_num} ({name_val}): Weight {weight_val}kg is out of realistic range")
-                    continue
-            except ValueError:
-                errors.append(f"Row {row_num} ({name_val}): Invalid weight '{raw_w}'")
-                continue
+            # Weight (optional if height provided)
+            weight_val = None
+            raw_w = row.get("weight") if "weight" in df.columns else None
+            if raw_w is not None and pd.notna(raw_w) and str(raw_w).strip() != "":
+                try:
+                    clean_w_str = re.sub(r"[^\d.]", "", str(raw_w))
+                    if clean_w_str:
+                        w = float(clean_w_str)
+                        if 0 < w <= 250:
+                            weight_val = w
+                        else:
+                            errors.append(f"Row {row_num} ({name_val}): Weight {w}kg is out of realistic range")
+                except ValueError:
+                    errors.append(f"Row {row_num} ({name_val}): Invalid weight '{raw_w}'")
 
-            # Height (optional)
+            # Height (optional; used for classification if weight omitted)
             height_val = None
             if "height" in df.columns and pd.notna(row.get("height")):
                 try:
                     clean_h_str = re.sub(r"[^\d.]", "", str(row.get("height")))
                     if clean_h_str:
                         h = float(clean_h_str)
-                        if 30 <= h <= 250:
+                        if 30 <= h <= 260:
                             height_val = h
                 except ValueError:
                     pass
+
+            if weight_val is None and height_val is None:
+                errors.append(f"Row {row_num} ({name_val}): Provide at least Weight or Height")
+                continue
 
             # Gender
             raw_g = row.get("gender") if "gender" in df.columns else "M"
@@ -227,7 +230,7 @@ def generate_styled_excel_workbook(athletes: List[CategorizedAthlete], event_tit
                 a.dob or "–",
                 a.calculated_age if a.calculated_age is not None else "–",
                 a.age_group,
-                f"{a.weight_kg:.1f}",
+                f"{a.weight_kg:.1f}" if a.weight_kg is not None else "–",
                 a.weight_class,
                 f"{a.height_cm:.1f}" if a.height_cm else "–",
                 a.height_category or "–",

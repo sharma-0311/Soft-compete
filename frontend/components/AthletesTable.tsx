@@ -3,16 +3,20 @@
 import React, { useState, useMemo } from "react";
 import {
   Search, ArrowUp, ArrowDown, Pencil, Trash2,
-  ChevronLeft, ChevronRight, AlertTriangle, CheckSquare, Square
+  ChevronLeft, ChevronRight, AlertTriangle, CheckSquare, Square,
+  Check, X, FileSpreadsheet
 } from "lucide-react";
 import { CategorizedAthlete } from "@/lib/api";
+import { categorizeAthleteClient, DEFAULT_RULES, formatDisplayDate } from "@/lib/rules";
 import { DivisionBadge } from "@/components/DivisionBadge";
+import { DobInput } from "@/components/DobInput";
 
 interface AthletesTableProps {
   athletes: CategorizedAthlete[];
   filterAge: string;
   setFilterAge: (val: string) => void;
   onEditAthlete: (athlete: CategorizedAthlete) => void;
+  onUpdateAthlete?: (updated: CategorizedAthlete) => void;
   onDeleteAthlete: (srNoOrId: number | string) => void;
   onDeleteSelected: (selectedIds: (number | string)[]) => void;
   onExportExcel: () => void;
@@ -21,14 +25,14 @@ interface AthletesTableProps {
 }
 
 const TABLE_COLUMNS = [
-  { key: "sr_no", label: "Sr." },
-  { key: "name", label: "Name" },
-  { key: "gender", label: "G" },
-  { key: "calculated_age", label: "Age / DOB" },
-  { key: "weight_kg", label: "Wt (kg)" },
-  { key: "height_cm", label: "Ht (cm)" },
-  { key: "full_category", label: "Assigned Category" },
-  { key: "club", label: "Club" },
+  { key: "sr_no", label: "Sr.", tip: "Sort by Serial Number" },
+  { key: "name", label: "Name", tip: "Sort by Athlete Name" },
+  { key: "gender", label: "G", tip: "Sort by Gender" },
+  { key: "calculated_age", label: "Age / DOB", tip: "Sort by Competition Age" },
+  { key: "weight_kg", label: "Wt (kg)", tip: "Sort by Weight (kg)" },
+  { key: "height_cm", label: "Ht (cm)", tip: "Sort by Height (cm)" },
+  { key: "full_category", label: "Assigned Category", tip: "Sort by Assigned Category" },
+  { key: "club", label: "Club", tip: "Sort by Club / Academy" },
 ];
 
 const DIVISIONS = ["All", "Sub-Jr", "Cadet", "Junior", "Senior"];
@@ -38,8 +42,10 @@ export const AthletesTable: React.FC<AthletesTableProps> = ({
   filterAge,
   setFilterAge,
   onEditAthlete,
+  onUpdateAthlete,
   onDeleteAthlete,
   onDeleteSelected,
+  onExportExcel,
 }) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [sortConfig, setSortConfig] = useState<{ key: string; dir: number }>({
@@ -49,6 +55,24 @@ export const AthletesTable: React.FC<AthletesTableProps> = ({
   const [pageSize, setPageSize] = useState<number>(25);
   const [currentPage, setCurrentPage] = useState<number>(0);
   const [selectedKeys, setSelectedKeys] = useState<Set<number | string>>(new Set());
+
+  // Inline cell editing state
+  const [editingKey, setEditingKey] = useState<number | string | null>(null);
+  const [editDraft, setEditDraft] = useState<{
+    name: string;
+    gender: "M" | "F";
+    dob: string;
+    weight: string;
+    height: string;
+    club: string;
+  }>({
+    name: "",
+    gender: "M",
+    dob: "",
+    weight: "",
+    height: "",
+    club: "",
+  });
 
   // Division counts for badges in tabs
   const divisionCounts = useMemo(() => {
@@ -90,6 +114,24 @@ export const AthletesTable: React.FC<AthletesTableProps> = ({
     validPage * pageSize + pageSize
   );
 
+  // Live preview category for active inline-edited row
+  const inlinePreview = useMemo(() => {
+    if (editingKey === null) return null;
+    const w = editDraft.weight.trim() ? parseFloat(editDraft.weight) : null;
+    const h = editDraft.height.trim() ? parseFloat(editDraft.height) : null;
+    return categorizeAthleteClient(
+      {
+        name: editDraft.name || "ATHLETE",
+        dob: editDraft.dob || null,
+        gender: editDraft.gender,
+        weight_kg: w && w > 0 ? w : null,
+        height_cm: h && h > 0 ? h : null,
+        club: editDraft.club || null,
+      },
+      DEFAULT_RULES
+    );
+  }, [editingKey, editDraft]);
+
   const toggleSort = (key: string) => {
     setSortConfig((prev) => ({
       key,
@@ -102,7 +144,7 @@ export const AthletesTable: React.FC<AthletesTableProps> = ({
       setSelectedKeys(new Set());
     } else {
       const next = new Set<number | string>();
-      paginatedAthletes.forEach((a) => next.add(a.id || a.sr_no || a.name));
+      paginatedAthletes.forEach((a) => next.add(a.id ?? a.sr_no ?? a.name));
       setSelectedKeys(next);
     }
   };
@@ -114,21 +156,83 @@ export const AthletesTable: React.FC<AthletesTableProps> = ({
     setSelectedKeys(next);
   };
 
+  const startInlineEdit = (a: CategorizedAthlete, key: number | string) => {
+    setEditingKey(key);
+    setEditDraft({
+      name: a.name || "",
+      gender: a.gender === "F" ? "F" : "M",
+      dob: formatDisplayDate(a.dob) || "",
+      weight: a.weight_kg !== null && a.weight_kg !== undefined ? String(a.weight_kg) : "",
+      height: a.height_cm !== null && a.height_cm !== undefined ? String(a.height_cm) : "",
+      club: a.club || "",
+    });
+  };
+
+  const cancelInlineEdit = () => {
+    setEditingKey(null);
+  };
+
+  const saveInlineEdit = (original: CategorizedAthlete) => {
+    if (!editDraft.name.trim()) return;
+    const w = editDraft.weight.trim() ? parseFloat(editDraft.weight) : null;
+    const h = editDraft.height.trim() ? parseFloat(editDraft.height) : null;
+
+    const recategorized = categorizeAthleteClient(
+      {
+        id: original.id,
+        sr_no: original.sr_no,
+        name: editDraft.name,
+        dob: editDraft.dob.trim() || null,
+        gender: editDraft.gender,
+        weight_kg: w && w > 0 ? w : null,
+        height_cm: h && h > 0 ? h : null,
+        club: editDraft.club.trim() || null,
+      },
+      DEFAULT_RULES
+    );
+
+    const updated: CategorizedAthlete = {
+      ...original,
+      ...recategorized,
+      id: original.id,
+      sr_no: original.sr_no,
+    };
+
+    if (onUpdateAthlete) {
+      onUpdateAthlete(updated);
+    } else {
+      onEditAthlete(updated);
+    }
+    setEditingKey(null);
+  };
+
+  const handleInlineKeyDown = (e: React.KeyboardEvent, original: CategorizedAthlete) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      saveInlineEdit(original);
+    } else if (e.key === "Escape") {
+      e.preventDefault();
+      cancelInlineEdit();
+    }
+  };
+
   return (
     <div className="rounded-xl border border-border bg-card shadow-xs print:hidden">
-      {/* 1. Header Toolbar: Division Tabs & Search */}
+      {/* 1. Header Toolbar: Division Tabs, Delete Button & Search */}
       <div className="flex flex-wrap items-center gap-3 border-b border-border p-3.5">
         {/* Division Filter Tabs */}
-        <div className="flex gap-1 rounded-lg bg-muted/80 p-1">
+        <div className="flex flex-wrap gap-1 rounded-lg bg-muted/80 p-1">
           {DIVISIONS.map((div) => {
             const isActive = filterAge === div;
             return (
               <button
                 key={div}
+                type="button"
                 onClick={() => {
                   setFilterAge(div);
                   setCurrentPage(0);
                 }}
+                title={`Filter roster to ${div === "Sub-Jr" ? "Sub-Junior" : div} athletes (${divisionCounts[div] ?? 0})`}
                 className={`rounded-md px-3 py-1 text-xs font-semibold transition-all flex items-center gap-1.5 ${
                   isActive
                     ? "bg-card text-foreground shadow-xs"
@@ -144,46 +248,83 @@ export const AthletesTable: React.FC<AthletesTableProps> = ({
           })}
         </div>
 
-        {/* Selected Rows Bulk Action */}
-        {selectedKeys.size > 0 && (
-          <div className="flex items-center gap-2 bg-muted px-3 py-1 rounded-md text-xs font-semibold">
-            <span>{selectedKeys.size} selected</span>
-            <button
-              onClick={() => {
-                onDeleteSelected(Array.from(selectedKeys));
-                setSelectedKeys(new Set());
-              }}
-              className="text-destructive hover:underline ml-1 font-bold"
-            >
-              Delete
-            </button>
-          </div>
-        )}
+        {/* Always-Visible Bulk Delete Button (Active when >=1 row selected, disabled otherwise) */}
+        <button
+          type="button"
+          disabled={selectedKeys.size === 0}
+          onClick={() => {
+            onDeleteSelected(Array.from(selectedKeys));
+            setSelectedKeys(new Set());
+          }}
+          title={
+            selectedKeys.size > 0
+              ? `Delete ${selectedKeys.size} selected athlete${selectedKeys.size === 1 ? "" : "s"}`
+              : "Select one or more rows using the checkboxes to enable Delete"
+          }
+          className={`h-9 px-3 rounded-lg text-xs font-semibold inline-flex items-center gap-1.5 transition-all ${
+            selectedKeys.size > 0
+              ? "bg-destructive text-destructive-foreground hover:bg-destructive/90 shadow-xs"
+              : "border border-border bg-card text-muted-foreground opacity-50 cursor-not-allowed"
+          }`}
+        >
+          <Trash2 className="h-3.5 w-3.5" />
+          <span>Delete{selectedKeys.size > 0 ? ` (${selectedKeys.size})` : ""}</span>
+        </button>
+
+        {/* Export Quick Action */}
+        <button
+          type="button"
+          disabled={athletes.length === 0}
+          onClick={onExportExcel}
+          title={athletes.length ? "Export categorized multi-sheet Excel (.xlsx)" : "Add athletes first to export Excel"}
+          className="h-9 px-3 rounded-lg border border-border bg-card hover:bg-muted text-xs font-medium text-foreground inline-flex items-center gap-1.5 transition-colors shadow-xs disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          <FileSpreadsheet className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+          <span className="hidden sm:inline">Export Excel</span>
+        </button>
 
         {/* Search Input */}
         <div className="relative ml-auto w-full max-w-xs">
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
           <input
             type="text"
-            className="h-9 w-full rounded-md border border-input bg-background pl-8 pr-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+            className="h-9 w-full rounded-lg border border-input bg-background pl-8 pr-8 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/60"
             placeholder="Search name, club, category…"
+            title="Search athletes by name, club, or category"
             value={searchQuery}
             onChange={(e) => {
               setSearchQuery(e.target.value);
               setCurrentPage(0);
             }}
           />
+          {searchQuery && (
+            <button
+              type="button"
+              onClick={() => setSearchQuery("")}
+              title="Clear search filter"
+              aria-label="Clear search"
+              className="absolute right-2 top-2 p-0.5 rounded text-muted-foreground hover:text-foreground"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          )}
         </div>
       </div>
 
-      {/* 2. Roster Table */}
+      {/* 2. Roster Table (Supports Direct In-Cell Inline Editing) */}
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-border text-left text-xs uppercase tracking-wider text-muted-foreground">
-              <th className="w-8 px-3 py-2">
+            <tr className="border-b border-border text-left text-xs uppercase tracking-wider text-muted-foreground bg-muted/30">
+              <th className="w-8 px-3 py-2.5">
                 <button
+                  type="button"
                   onClick={handleToggleSelectAll}
+                  title={
+                    selectedKeys.size > 0 && selectedKeys.size === paginatedAthletes.length
+                      ? "Deselect all athletes on this page"
+                      : "Select all athletes on this page"
+                  }
                   className="text-muted-foreground hover:text-foreground"
                   aria-label="Select all on this page"
                 >
@@ -195,9 +336,11 @@ export const AthletesTable: React.FC<AthletesTableProps> = ({
                 </button>
               </th>
               {TABLE_COLUMNS.map((col) => (
-                <th key={col.key} className="whitespace-nowrap px-3 py-2 font-medium">
+                <th key={col.key} className="whitespace-nowrap px-3 py-2.5 font-medium">
                   <button
-                    className="inline-flex items-center gap-1 hover:text-foreground"
+                    type="button"
+                    title={col.tip}
+                    className="inline-flex items-center gap-1 hover:text-foreground transition-colors"
                     onClick={() => toggleSort(col.key)}
                   >
                     <span>{col.label}</span>
@@ -210,26 +353,36 @@ export const AthletesTable: React.FC<AthletesTableProps> = ({
                   </button>
                 </th>
               ))}
-              <th className="px-3 py-2 text-right font-medium">Actions</th>
+              <th className="px-3 py-2.5 text-right font-medium">Actions</th>
             </tr>
           </thead>
           <tbody>
             {paginatedAthletes.map((a, idx) => {
-              const rowKey = a.id || a.sr_no || a.name || idx;
+              const rowKey = a.id ?? a.sr_no ?? a.name ?? idx;
               const isChecked = selectedKeys.has(rowKey);
+              const isEditing = editingKey === rowKey;
               const hasNotes = a.notes && a.notes.length > 0;
 
               return (
                 <tr
                   key={rowKey}
-                  className={`border-b border-border/60 hover:bg-muted/40 transition-colors ${
-                    isChecked ? "bg-accent/40" : ""
+                  onDoubleClick={() => !isEditing && startInlineEdit(a, rowKey)}
+                  title={!isEditing ? "Double-click row or click Pencil icon to edit cells inline" : undefined}
+                  className={`border-b border-border/60 transition-colors ${
+                    isEditing
+                      ? "bg-primary/5 ring-1 ring-inset ring-primary/30"
+                      : isChecked
+                      ? "bg-accent/40 hover:bg-accent/50"
+                      : "hover:bg-muted/40"
                   }`}
                 >
                   {/* Select Checkbox */}
                   <td className="px-3 py-2">
                     <button
+                      type="button"
                       onClick={() => handleToggleRow(rowKey)}
+                      title={isChecked ? `Deselect ${a.name}` : `Select ${a.name} for bulk actions`}
+                      aria-label={`Select ${a.name}`}
                       className="text-muted-foreground hover:text-foreground"
                     >
                       {isChecked ? (
@@ -245,86 +398,212 @@ export const AthletesTable: React.FC<AthletesTableProps> = ({
                     {a.sr_no || validPage * pageSize + idx + 1}
                   </td>
 
-                  {/* 2. Name */}
-                  <td className="px-3 py-2 font-medium text-foreground">
-                    <div className="flex items-center gap-1.5">
-                      <span>{a.name}</span>
-                      {hasNotes && (
-                        <span
-                          title={a.notes.join("; ")}
-                          className="inline-flex items-center text-warning cursor-help"
-                        >
-                          <AlertTriangle className="h-3.5 w-3.5" />
-                        </span>
-                      )}
-                    </div>
+                  {/* 2. Name (Inline Input when Editing) */}
+                  <td className="px-2.5 py-2 font-medium text-foreground">
+                    {isEditing ? (
+                      <input
+                        type="text"
+                        autoFocus
+                        value={editDraft.name}
+                        onChange={(e) => setEditDraft({ ...editDraft, name: e.target.value })}
+                        onKeyDown={(e) => handleInlineKeyDown(e, a)}
+                        placeholder="Full name"
+                        title="Edit athlete name"
+                        className="h-8 w-full min-w-[130px] rounded-md border border-primary/50 bg-background px-2 text-xs font-medium text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                      />
+                    ) : (
+                      <div className="flex items-center gap-1.5">
+                        <span>{a.name}</span>
+                        {hasNotes && (
+                          <span
+                            title={a.notes.join("; ")}
+                            className="inline-flex items-center text-warning cursor-help"
+                          >
+                            <AlertTriangle className="h-3.5 w-3.5" />
+                          </span>
+                        )}
+                      </div>
+                    )}
                   </td>
 
-                  {/* 3. Gender */}
-                  <td
-                    className={`px-3 py-2 font-semibold ${
-                      a.gender === "M" ? "text-male" : "text-female"
-                    }`}
-                  >
-                    {a.gender}
-                  </td>
-
-                  {/* 4. Age / DOB */}
-                  <td className="whitespace-nowrap px-3 py-2">
-                    <span className="tabular-nums font-medium text-foreground">
-                      {a.competition_age ?? a.calculated_age ?? "—"}
-                    </span>{" "}
-                    {a.dob && (
-                      <span className="text-xs text-muted-foreground">
-                        {a.dob}
+                  {/* 3. Gender (Inline Toggle when Editing) */}
+                  <td className="px-2.5 py-2 font-semibold">
+                    {isEditing ? (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setEditDraft({ ...editDraft, gender: editDraft.gender === "M" ? "F" : "M" })
+                        }
+                        title="Click to toggle Male (M) / Female (F)"
+                        className={`h-8 w-10 rounded-md border border-input text-xs font-bold transition-colors ${
+                          editDraft.gender === "M"
+                            ? "bg-blue-500/15 text-male border-blue-500/30"
+                            : "bg-pink-500/15 text-female border-pink-500/30"
+                        }`}
+                      >
+                        {editDraft.gender}
+                      </button>
+                    ) : (
+                      <span className={a.gender === "M" ? "text-male" : "text-female"}>
+                        {a.gender}
                       </span>
                     )}
                   </td>
 
-                  {/* 5. Weight */}
-                  <td className="px-3 py-2 tabular-nums font-medium text-foreground">
-                    {a.weight_kg ? `${a.weight_kg} kg` : "—"}
+                  {/* 4. Age / DOB (Inline DobInput with auto "/" when Editing) */}
+                  <td className="whitespace-nowrap px-2.5 py-2">
+                    {isEditing ? (
+                      <div className="flex items-center gap-1.5">
+                        <DobInput
+                          compact
+                          value={editDraft.dob}
+                          onChange={(val) => setEditDraft({ ...editDraft, dob: val })}
+                          onKeyDown={(e) => handleInlineKeyDown(e, a)}
+                          className="w-36"
+                          title="Type DOB (auto '/') or use calendar button"
+                        />
+                        {inlinePreview?.calculated_age !== null && inlinePreview?.calculated_age !== undefined && (
+                          <span className="text-[11px] font-semibold text-muted-foreground tabular-nums">
+                            ({inlinePreview.calculated_age}y)
+                          </span>
+                        )}
+                      </div>
+                    ) : (
+                      <>
+                        <span className="tabular-nums font-medium text-foreground">
+                          {a.competition_age ?? a.calculated_age ?? "—"}
+                        </span>{" "}
+                        {a.dob && (
+                          <span className="text-xs text-muted-foreground">{a.dob}</span>
+                        )}
+                      </>
+                    )}
                   </td>
 
-                  {/* 6. Height */}
-                  <td className="px-3 py-2 tabular-nums text-muted-foreground">
-                    {a.height_cm ? `${a.height_cm} cm` : "—"}
+                  {/* 5. Weight (Optional Inline Input) */}
+                  <td className="px-2.5 py-2 tabular-nums font-medium text-foreground">
+                    {isEditing ? (
+                      <input
+                        type="number"
+                        step="0.1"
+                        min="0"
+                        max="250"
+                        value={editDraft.weight}
+                        onChange={(e) => setEditDraft({ ...editDraft, weight: e.target.value })}
+                        onKeyDown={(e) => handleInlineKeyDown(e, a)}
+                        placeholder="Opt"
+                        title="Edit weight in kg (optional — leave empty to categorize by height)"
+                        className="h-8 w-20 rounded-md border border-input bg-background px-2 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                      />
+                    ) : (
+                      <span>{a.weight_kg ? `${a.weight_kg} kg` : "—"}</span>
+                    )}
                   </td>
 
-                  {/* 7. Assigned Category */}
+                  {/* 6. Height (Inline Input) */}
+                  <td className="px-2.5 py-2 tabular-nums text-muted-foreground">
+                    {isEditing ? (
+                      <input
+                        type="number"
+                        step="0.1"
+                        min="30"
+                        max="260"
+                        value={editDraft.height}
+                        onChange={(e) => setEditDraft({ ...editDraft, height: e.target.value })}
+                        onKeyDown={(e) => handleInlineKeyDown(e, a)}
+                        placeholder="cm"
+                        title="Edit height in cm"
+                        className="h-8 w-20 rounded-md border border-input bg-background px-2 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                      />
+                    ) : (
+                      <span>{a.height_cm ? `${a.height_cm} cm` : "—"}</span>
+                    )}
+                  </td>
+
+                  {/* 7. Assigned Category (Live-updating preview while Editing!) */}
                   <td className="whitespace-nowrap px-3 py-2">
-                    <div className="flex items-center gap-2">
-                      <DivisionBadge group={a.age_group} />
-                      <span className="font-medium text-foreground">{a.weight_class}</span>
-                      {a.height_category && (
-                        <span className="text-muted-foreground text-xs">
-                          · {a.height_category}
+                    {isEditing && inlinePreview ? (
+                      <div className="flex items-center gap-2">
+                        <DivisionBadge group={inlinePreview.age_group} />
+                        <span className="font-semibold text-primary text-xs">
+                          {inlinePreview.weight_class}
                         </span>
-                      )}
-                    </div>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        <DivisionBadge group={a.age_group} />
+                        <span className="font-medium text-foreground">{a.weight_class}</span>
+                        {a.height_category && a.weight_kg && (
+                          <span className="text-muted-foreground text-xs">
+                            · {a.height_category}
+                          </span>
+                        )}
+                      </div>
+                    )}
                   </td>
 
-                  {/* 8. Club */}
-                  <td className="px-3 py-2 text-muted-foreground">
-                    {a.club || "—"}
+                  {/* 8. Club (Inline Input when Editing) */}
+                  <td className="px-2.5 py-2 text-muted-foreground">
+                    {isEditing ? (
+                      <input
+                        type="text"
+                        value={editDraft.club}
+                        onChange={(e) => setEditDraft({ ...editDraft, club: e.target.value })}
+                        onKeyDown={(e) => handleInlineKeyDown(e, a)}
+                        placeholder="Club"
+                        title="Edit club / school name"
+                        className="h-8 w-full min-w-[100px] rounded-md border border-input bg-background px-2 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                      />
+                    ) : (
+                      <span>{a.club || "—"}</span>
+                    )}
                   </td>
 
-                  {/* 9. Actions */}
+                  {/* 9. Actions (Save/Cancel inline when Editing, Pencil/Trash otherwise) */}
                   <td className="px-3 py-2 text-right whitespace-nowrap">
-                    <button
-                      onClick={() => onEditAthlete(a)}
-                      aria-label="Edit athlete"
-                      className="p-1 text-muted-foreground hover:text-foreground rounded transition-colors mr-1"
-                    >
-                      <Pencil className="h-3.5 w-3.5" />
-                    </button>
-                    <button
-                      onClick={() => onDeleteAthlete(a.id || a.sr_no || a.name)}
-                      aria-label="Delete athlete"
-                      className="p-1 text-muted-foreground hover:text-destructive rounded transition-colors"
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </button>
+                    {isEditing ? (
+                      <div className="inline-flex items-center gap-1">
+                        <button
+                          type="button"
+                          onClick={() => saveInlineEdit(a)}
+                          title="Save inline edits (Enter)"
+                          aria-label="Save changes"
+                          className="p-1.5 rounded-md bg-emerald-600 text-white hover:bg-emerald-700 transition-colors"
+                        >
+                          <Check className="h-3.5 w-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={cancelInlineEdit}
+                          title="Cancel inline editing (Esc)"
+                          aria-label="Cancel editing"
+                          className="p-1.5 rounded-md border border-border bg-card text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                        >
+                          <X className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="inline-flex items-center gap-1">
+                        <button
+                          type="button"
+                          onClick={() => startInlineEdit(a, rowKey)}
+                          title={`Edit ${a.name} directly in this row`}
+                          aria-label={`Edit ${a.name}`}
+                          className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted rounded transition-colors"
+                        >
+                          <Pencil className="h-3.5 w-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => onDeleteAthlete(rowKey)}
+                          title={`Delete ${a.name} from roster`}
+                          aria-label={`Delete ${a.name}`}
+                          className="p-1.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded transition-colors"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    )}
                   </td>
                 </tr>
               );
@@ -345,7 +624,8 @@ export const AthletesTable: React.FC<AthletesTableProps> = ({
       <div className="flex items-center gap-3 p-3 text-xs text-muted-foreground border-t border-border">
         <span>Rows</span>
         <select
-          className="rounded border border-input bg-background px-2 py-1 text-foreground focus:outline-none"
+          title="Select number of athletes shown per page"
+          className="rounded-md border border-input bg-background px-2 py-1 text-foreground focus:outline-none"
           value={pageSize}
           onChange={(e) => {
             setPageSize(Number(e.target.value));
@@ -369,8 +649,10 @@ export const AthletesTable: React.FC<AthletesTableProps> = ({
         </span>
 
         <button
+          type="button"
           disabled={validPage === 0}
           onClick={() => setCurrentPage(validPage - 1)}
+          title="Go to previous page"
           className="p-1 rounded hover:bg-muted text-foreground disabled:opacity-30 disabled:pointer-events-none transition-colors"
           aria-label="Previous Page"
         >
@@ -382,8 +664,10 @@ export const AthletesTable: React.FC<AthletesTableProps> = ({
         </span>
 
         <button
+          type="button"
           disabled={validPage >= totalPages - 1}
           onClick={() => setCurrentPage(validPage + 1)}
+          title="Go to next page"
           className="p-1 rounded hover:bg-muted text-foreground disabled:opacity-30 disabled:pointer-events-none transition-colors"
           aria-label="Next Page"
         >

@@ -34,7 +34,7 @@ export interface AthleteInput {
   dob?: string | null;
   age_years?: number | null;
   gender: string;
-  weight_kg: number;
+  weight_kg?: number | null;
   height_cm?: number | null;
   club?: string | null;
 }
@@ -48,7 +48,7 @@ export interface CategorizedAthlete {
   calculated_age?: number | null;
   competition_age?: number | null;
   age_group: string;
-  weight_kg: number;
+  weight_kg?: number | null;
   height_cm?: number | null;
   weight_class: string;
   height_category?: string | null;
