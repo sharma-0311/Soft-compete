@@ -388,7 +388,25 @@ export default function HomePage() {
   ).length;
 
   return (
-    <div className="min-h-screen bg-background text-foreground flex flex-col font-sans transition-colors selection:bg-primary selection:text-primary-foreground">
+    <div className="min-h-screen bg-background text-foreground flex flex-col font-sans transition-colors selection:bg-primary selection:text-primary-foreground relative overflow-x-clip">
+      {/* Unified Taekwondo Top Hero Artwork Backdrop spanning seamlessly behind Top Bar + Title */}
+      <div
+        className={`pointer-events-none absolute top-0 inset-x-0 overflow-hidden transition-all ${
+          currentTab === "athletes" ? "h-[225px] sm:h-[215px]" : "h-16"
+        }`}
+      >
+        <div className="max-w-[1400px] mx-auto relative h-full">
+          <img
+            src="/tkd-hero-banner.jpg"
+            alt=""
+            aria-hidden="true"
+            className="ml-auto h-full w-full md:w-[75%] lg:w-[62%] object-cover object-[88%_20%] opacity-90 dark:opacity-35"
+          />
+        </div>
+        <div className="absolute inset-0 bg-gradient-to-r from-background via-background/95 via-[44%] to-transparent dark:from-background dark:via-background/92 dark:via-[48%] dark:to-background/40" />
+        <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-background via-background/70 to-transparent" />
+      </div>
+
       {/* 1. Global Navigation Header */}
       <Navbar
         currentTab={currentTab}
@@ -414,24 +432,12 @@ export default function HomePage() {
       )}
 
       {/* 3. Main Workspace Container */}
-      <main className="flex-1 max-w-[1400px] w-full mx-auto px-4 sm:px-6 py-6 space-y-5 print:hidden">
+      <main className="relative z-10 flex-1 max-w-[1400px] w-full mx-auto px-4 sm:px-6 pt-3 pb-6 space-y-4 print:hidden">
         {/* TAB 1: ATHLETES ROSTER WORKSPACE */}
         {currentTab === "athletes" && (
-          <div className="space-y-5">
+          <div className="space-y-4">
             {/* Operational Hero Header matching Reference Layout */}
-            <section className="relative -mx-4 sm:-mx-6 -mt-6 px-4 sm:px-6 pt-6 pb-4">
-              {/* Background Taekwondo Sparring Banner Blended in Upper-Right */}
-              <div className="pointer-events-none absolute inset-0 overflow-hidden">
-                <img
-                  src="/tkd-hero-banner.jpg"
-                  alt=""
-                  aria-hidden="true"
-                  className="h-full w-full object-cover object-[92%_18%] opacity-90 dark:opacity-35 transition-opacity"
-                />
-                <div className="absolute inset-0 bg-gradient-to-r from-background via-background/95 via-[46%] to-transparent dark:from-background dark:via-background/92 dark:via-[50%] dark:to-background/45" />
-                <div className="absolute inset-x-0 bottom-0 h-14 bg-gradient-to-t from-background via-background/60 to-transparent" />
-              </div>
-
+            <section className="relative py-2">
               <div className="relative z-10 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
                 {/* Left: Event Venue, Date & Tournament Title */}
                 <div className="space-y-1 max-w-2xl">
