@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import {
-  Users, Scale, FileText, UserPlus, FileUp, Camera, Eraser, Download, Sparkles,
+  Users, Scale, FileText, UserPlus, FileUp, Eraser, Download, Sparkles,
   RefreshCw, Trash2, AlertTriangle, Shield, Printer, CheckCircle2,
   Calendar, Layers, Plus, Database, ChevronDown, MapPin, FileSpreadsheet
 } from "lucide-react";
@@ -418,63 +418,47 @@ export default function HomePage() {
         {/* TAB 1: ATHLETES ROSTER WORKSPACE */}
         {currentTab === "athletes" && (
           <div className="space-y-5">
-            {/* Operational Hero Header with Taekwondo Illustration Banner */}
-            <section className="relative rounded-2xl border border-border bg-card shadow-xs px-5 py-5 sm:px-6 sm:py-6">
-              {/* Clipped Background Artwork Layer (kept separate so dropdown menu never clips) */}
-              <div className="pointer-events-none absolute inset-0 overflow-hidden rounded-2xl">
+            {/* Operational Hero Header matching Reference Layout */}
+            <section className="relative -mx-4 sm:-mx-6 -mt-6 px-4 sm:px-6 pt-6 pb-4">
+              {/* Background Taekwondo Sparring Banner Blended in Upper-Right */}
+              <div className="pointer-events-none absolute inset-0 overflow-hidden">
                 <img
                   src="/tkd-hero-banner.jpg"
                   alt=""
                   aria-hidden="true"
-                  className="h-full w-full object-cover object-[85%_22%] opacity-85 dark:opacity-35 transition-opacity"
+                  className="h-full w-full object-cover object-[92%_18%] opacity-90 dark:opacity-35 transition-opacity"
                 />
-                {/* Theme-aware fade gradient so title, metadata & buttons always have crisp contrast */}
-                <div className="absolute inset-0 bg-gradient-to-r from-card via-card/95 via-[48%] to-card/15 dark:from-card dark:via-card/95 dark:via-[50%] dark:to-card/55" />
-                <div className="absolute inset-x-0 bottom-0 h-14 bg-gradient-to-t from-card/90 to-transparent" />
+                <div className="absolute inset-0 bg-gradient-to-r from-background via-background/95 via-[46%] to-transparent dark:from-background dark:via-background/92 dark:via-[50%] dark:to-background/45" />
+                <div className="absolute inset-x-0 bottom-0 h-14 bg-gradient-to-t from-background via-background/60 to-transparent" />
               </div>
 
               <div className="relative z-10 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-                {/* Left: Event Venue, Date, Online Pill, Tournament Title */}
-                <div className="space-y-1.5 max-w-2xl">
-                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs font-medium text-muted-foreground">
+                {/* Left: Event Venue, Date & Tournament Title */}
+                <div className="space-y-1 max-w-2xl">
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs font-medium text-muted-foreground">
                     <span className="inline-flex items-center gap-1.5">
-                      <MapPin className="h-3.5 w-3.5 text-primary shrink-0" />
+                      <MapPin className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                       <span>
-                        {currentEvent?.location || (isBackendOnline ? "Competition Arena" : "Offline Workspace")}
+                        {currentEvent?.location || "State Sports Complex"}
                       </span>
                     </span>
                     <span className="inline-flex items-center gap-1.5 tabular-nums">
-                      <Calendar className="h-3.5 w-3.5 text-primary shrink-0" />
+                      <Calendar className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                       <span>{currentEvent?.event_date || activeRules.event_date || "2026-10-24"}</span>
-                    </span>
-                    <span
-                      title={isBackendOnline ? "Connected to FastAPI backend" : "Running locally in offline browser mode"}
-                      className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${
-                        isBackendOnline
-                          ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/25"
-                          : "bg-muted text-muted-foreground border-border"
-                      }`}
-                    >
-                      <span
-                        className={`h-1.5 w-1.5 rounded-full ${
-                          isBackendOnline ? "bg-emerald-500" : "bg-muted-foreground"
-                        }`}
-                      />
-                      <span>{isBackendOnline ? "Online" : "Offline"}</span>
                     </span>
                   </div>
 
-                  <h1 className="font-display text-3xl sm:text-[36px] font-bold uppercase tracking-tight leading-none text-foreground pt-0.5">
+                  <h1 className="font-display text-3xl sm:text-[36px] font-bold uppercase tracking-tight leading-none text-foreground pt-1">
                     {currentEvent?.name || "2026 DISTRICT TAEKWONDO CHAMPIONSHIP"}
                   </h1>
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-sm text-muted-foreground pt-0.5">
                     Manage registrations and verify tournament categories.
                   </p>
                 </div>
 
-                {/* Right: Operational Action Strip */}
+                {/* Right: Operational Action Strip (Add Athletes, Import file, Weigh-in sheet, Clear, More) */}
                 <div className="flex flex-wrap items-center gap-2">
-                  {/* 1. Primary Action: Add athletes */}
+                  {/* 1. Primary Action: Add Athletes */}
                   <button
                     type="button"
                     onClick={() => setShowManualModal(true)}
@@ -485,7 +469,7 @@ export default function HomePage() {
                     <span>Add Athletes</span>
                   </button>
 
-                  {/* 2. Secondary Action: Import file */}
+                  {/* 2. Import file */}
                   <button
                     type="button"
                     onClick={() => setShowExcelModal(true)}
@@ -496,18 +480,7 @@ export default function HomePage() {
                     <span>Import file</span>
                   </button>
 
-                  {/* 3. Scan form (Disabled - keeping visual slot, OCR disabled per requirements) */}
-                  <button
-                    type="button"
-                    disabled
-                    title="Scan form (OCR image import) is currently disabled"
-                    className="h-9 px-3.5 rounded-lg border border-border bg-card/85 text-sm font-medium text-muted-foreground/70 flex items-center gap-2 shadow-xs opacity-60 cursor-not-allowed"
-                  >
-                    <Camera className="h-4 w-4" />
-                    <span>Scan form</span>
-                  </button>
-
-                  {/* 4. Weigh-in sheet */}
+                  {/* 3. Weigh-in sheet */}
                   <button
                     type="button"
                     onClick={() => setShowPrintModal(true)}
@@ -519,19 +492,19 @@ export default function HomePage() {
                     <span>Weigh-in sheet</span>
                   </button>
 
-                  {/* 5. Clear */}
+                  {/* 4. Clear */}
                   <button
                     type="button"
                     onClick={handleClearRoster}
                     disabled={!athletes.length}
                     title={athletes.length ? "Clear all athletes from current roster" : "Roster is already empty"}
-                    className="h-9 px-3 rounded-lg border border-border bg-card/95 backdrop-blur-xs text-sm font-medium text-muted-foreground hover:text-destructive hover:bg-muted flex items-center gap-1.5 transition-colors shadow-xs disabled:opacity-45 disabled:cursor-not-allowed"
+                    className="h-9 px-3 rounded-lg border border-border bg-card/95 backdrop-blur-xs text-sm font-medium text-foreground hover:text-destructive hover:bg-muted flex items-center gap-1.5 transition-colors shadow-xs disabled:opacity-45 disabled:cursor-not-allowed"
                   >
-                    <Eraser className="h-4 w-4" />
+                    <Trash2 className="h-4 w-4 text-muted-foreground" />
                     <span>Clear</span>
                   </button>
 
-                  {/* 6. More Tools Dropdown */}
+                  {/* 5. More Tools Dropdown */}
                   <div className="relative">
                     <button
                       type="button"

@@ -22,41 +22,41 @@ interface DivisionVisual {
 const DIVISION_META: Record<string, DivisionVisual> = {
   "Sub-Jr": {
     label: "Sub-Junior",
-    barClass: "bg-div-subjr",
-    tintClass: "bg-gradient-to-br from-card via-card to-div-subjr/[0.11] dark:to-div-subjr/15",
-    textClass: "text-div-subjr",
-    silhouetteClass: "text-div-subjr/25 dark:text-div-subjr/20",
+    barClass: "bg-amber-600 dark:bg-div-subjr",
+    tintClass: "bg-amber-50/75 dark:bg-gradient-to-br dark:from-card dark:via-card dark:to-div-subjr/15",
+    textClass: "text-amber-600 dark:text-div-subjr",
+    silhouetteClass: "text-amber-500/25 dark:text-div-subjr/20",
     Icon: Zap,
   },
   Cadet: {
     label: "Cadet",
-    barClass: "bg-div-cadet",
-    tintClass: "bg-gradient-to-br from-card via-card to-div-cadet/[0.11] dark:to-div-cadet/15",
-    textClass: "text-div-cadet",
-    silhouetteClass: "text-div-cadet/25 dark:text-div-cadet/20",
+    barClass: "bg-emerald-600 dark:bg-div-cadet",
+    tintClass: "bg-emerald-50/70 dark:bg-gradient-to-br dark:from-card dark:via-card dark:to-div-cadet/15",
+    textClass: "text-emerald-600 dark:text-div-cadet",
+    silhouetteClass: "text-emerald-500/25 dark:text-div-cadet/20",
     Icon: Medal,
   },
   Junior: {
     label: "Junior",
-    barClass: "bg-div-junior",
-    tintClass: "bg-gradient-to-br from-card via-card to-div-junior/[0.11] dark:to-div-junior/15",
-    textClass: "text-div-junior",
-    silhouetteClass: "text-div-junior/25 dark:text-div-junior/20",
+    barClass: "bg-blue-600 dark:bg-div-junior",
+    tintClass: "bg-blue-50/75 dark:bg-gradient-to-br dark:from-card dark:via-card dark:to-div-junior/15",
+    textClass: "text-blue-600 dark:text-div-junior",
+    silhouetteClass: "text-blue-500/25 dark:text-div-junior/20",
     Icon: Award,
   },
   Senior: {
     label: "Senior",
-    barClass: "bg-div-senior",
-    tintClass: "bg-gradient-to-br from-card via-card to-div-senior/[0.11] dark:to-div-senior/15",
-    textClass: "text-div-senior",
-    silhouetteClass: "text-div-senior/25 dark:text-div-senior/20",
+    barClass: "bg-rose-600 dark:bg-div-senior",
+    tintClass: "bg-rose-50/75 dark:bg-gradient-to-br dark:from-card dark:via-card dark:to-div-senior/15",
+    textClass: "text-rose-600 dark:text-div-senior",
+    silhouetteClass: "text-rose-500/25 dark:text-div-senior/20",
     Icon: Trophy,
   },
 };
 
 const DIVISIONS = ["Sub-Jr", "Cadet", "Junior", "Senior"];
 
-/** Minimal vector silhouette of a Taekwondo athlete throwing a high side kick. */
+/** Sharp vector silhouette of a Taekwondo athlete executing a high side kick (left-facing). */
 function TkdKickSilhouette({ className = "" }: { className?: string }) {
   return (
     <svg
@@ -65,20 +65,23 @@ function TkdKickSilhouette({ className = "" }: { className?: string }) {
       aria-hidden="true"
       className={className}
     >
-      {/* Head */}
-      <circle cx="71" cy="24" r="9.5" />
-      {/* Upper torso leaning back for high kick */}
-      <path d="M58 34c7-2 15 1 17 8l4 20c1 6-3 12-9 13l-9 1c-5 0-9-4-10-9l-3-19c-1-6 4-12 10-14z" />
-      {/* Raised guard arms */}
-      <path d="M71 38l16 7c3 1 5 5 3 8s-6 4-9 2l-13-7z" />
-      <path d="M56 42l-13 9c-3 2-6 1-8-2s-1-6 2-8l15-9z" />
-      {/* Extended high kicking leg (upper left) */}
-      <path d="M53 60L21 28c-3-3-3-7 0-9 3-2 7-1 10 2l29 29c4 4 3 10-2 12-2 1-4 0-5-2z" />
+      {/* Headgear profile facing left */}
+      <circle cx="72" cy="21" r="8.5" />
+      <path d="M63 18c-3 2-3 7 0 9l5-1v-7z" />
+      {/* Leaning torso in dobok */}
+      <path d="M62 31c6-2 13 1 15 7l4 21c1 5-2 10-8 12l-9 1c-5 0-9-3-10-8l-3-20c-1-6 4-11 11-13z" />
+      {/* Guard arms */}
+      <path d="M72 36l13 10c2 2 2 5 0 7-2 2-5 2-7 0l-12-9z" />
+      <path d="M59 38l-15 8c-3 1-6 0-7-2s0-6 3-7l14-8z" />
+      {/* High extended side-kick leg + foot */}
+      <path d="M55 55L21 20c-2-2-3-5-1-7 2-3 5-3 8-1l33 34c4 4 3 10-1 12-2 1-4 0-5-3z" />
+      <path d="M18 16l6-5c2-1 4 0 5 2l-6 7c-2 2-4 1-5-1z" />
       {/* Planted standing leg */}
-      <path d="M62 72l4 37c0 3-3 6-6 6s-6-3-6-6l-2-35z" />
-      {/* Flowing black belt tails */}
-      <path d="M68 64l18 11c2 1 3 4 1 6-1 2-4 2-6 1L64 71z" />
-      <path d="M63 66l9 18c1 2 0 5-2 6s-5 0-6-2l-7-17z" />
+      <path d="M66 69l3 38c0 3-3 5-6 5s-6-2-6-5l-2-36z" />
+      <path d="M57 108h14c2 0 3 2 3 4H57z" />
+      {/* Flying belt ends */}
+      <path d="M72 62l15 11c2 1 2 4 0 5-1 2-4 2-5 0L68 68z" />
+      <path d="M68 64l7 16c1 2 0 4-2 5s-4 0-5-2l-6-15z" />
     </svg>
   );
 }
@@ -127,7 +130,6 @@ export const SummaryCards: React.FC<SummaryCardsProps> = ({
     let maleCount = 0;
     let femaleCount = 0;
     let unknownCount = 0;
-    let flaggedCount = 0;
 
     for (const a of athletes) {
       if (!byDivision[a.age_group]) {
@@ -142,9 +144,6 @@ export const SummaryCards: React.FC<SummaryCardsProps> = ({
       }
 
       if (a.age_group === "Unknown") unknownCount++;
-      if ((a.notes && a.notes.length > 0) || a.age_group === "Unknown" || a.weight_class === "Unassigned") {
-        flaggedCount++;
-      }
     }
 
     const categorizedRate =
@@ -157,7 +156,6 @@ export const SummaryCards: React.FC<SummaryCardsProps> = ({
       maleCount,
       femaleCount,
       unknownCount,
-      flaggedCount,
       categorizedRate,
     };
   }, [athletes]);
@@ -168,21 +166,21 @@ export const SummaryCards: React.FC<SummaryCardsProps> = ({
       <div
         onClick={() => onSelectAgeGroup("All")}
         title="Click to show all athletes across every age division"
-        className={`rounded-xl border p-4 sm:p-5 shadow-xs transition-all cursor-pointer flex flex-col justify-between bg-gradient-to-br from-primary/[0.05] via-card to-card dark:from-primary/15 dark:via-card dark:to-card ${
+        className={`rounded-xl border p-4 sm:p-5 shadow-xs transition-all cursor-pointer flex flex-col justify-between bg-card ${
           selectedAgeGroup === "All"
-            ? "border-primary/50 ring-1 ring-primary/25"
-            : "border-primary/30 hover:border-primary/50"
+            ? "border-blue-500/60 dark:border-primary/60 ring-1 ring-blue-500/20"
+            : "border-blue-500/35 dark:border-primary/40 hover:border-blue-500/60"
         }`}
       >
         <div>
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-1.5 text-xs font-semibold text-foreground/85 tracking-wide">
-              <Users className="h-4 w-4 text-primary" />
+              <Users className="h-4 w-4 text-blue-600 dark:text-primary" />
               <span>Total Athletes</span>
             </div>
             <span
               title={`${stats.categorizedRate}% of athletes matched to an age division`}
-              className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 border border-emerald-500/25 px-2 py-0.5 text-[11px] font-bold text-emerald-700 dark:text-emerald-300 tabular-nums"
+              className="inline-flex items-center gap-1 rounded-full bg-emerald-50 border border-emerald-200 dark:bg-emerald-500/15 dark:border-emerald-500/30 px-2 py-0.5 text-[11px] font-bold text-emerald-700 dark:text-emerald-300 tabular-nums"
             >
               <span>▲</span>
               <span>{stats.categorizedRate}%</span>
@@ -195,16 +193,21 @@ export const SummaryCards: React.FC<SummaryCardsProps> = ({
         </div>
 
         <div className="mt-3.5 space-y-2">
-          <ProgressBar label="Male" n={stats.maleCount} total={total} cls="bg-male" />
-          <ProgressBar label="Female" n={stats.femaleCount} total={total} cls="bg-female" />
+          <ProgressBar label="Male" n={stats.maleCount} total={total} cls="bg-blue-600 dark:bg-male" />
+          <ProgressBar label="Female" n={stats.femaleCount} total={total} cls="bg-pink-600 dark:bg-female" />
         </div>
 
-        {(stats.flaggedCount > 0 || stats.unknownCount > 0) && (
-          <div className="mt-3 pt-2 border-t border-border/60 flex items-center gap-1.5 text-xs font-semibold text-warning">
-            <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+        {total > 0 && (
+          <div className="mt-3 pt-2 border-t border-border/60 flex items-center justify-between gap-1.5 text-[11px] font-medium text-muted-foreground">
             <span>
-              {stats.flaggedCount} flagged · {stats.unknownCount} uncategorized
+              {total - stats.unknownCount} assigned categories
             </span>
+            {stats.unknownCount > 0 && (
+              <span className="inline-flex items-center gap-1 text-warning font-semibold">
+                <AlertTriangle className="h-3 w-3 shrink-0" />
+                <span>{stats.unknownCount} unassigned</span>
+              </span>
+            )}
           </div>
         )}
       </div>

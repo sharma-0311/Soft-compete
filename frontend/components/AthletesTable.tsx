@@ -4,7 +4,7 @@ import React, { useState, useMemo } from "react";
 import {
   Search, ArrowUp, ArrowDown, ArrowUpDown, Pencil, Trash2,
   ChevronLeft, ChevronRight, AlertTriangle, CheckSquare, Square,
-  Check, X, FileSpreadsheet, Filter, Eye, CheckCircle2, ChevronDown
+  Check, X, FileSpreadsheet, Filter, Eye, ChevronDown
 } from "lucide-react";
 import { CategorizedAthlete, RulesConfig } from "@/lib/api";
 import { categorizeAthleteClient, DEFAULT_RULES, formatDisplayDate } from "@/lib/rules";
@@ -34,13 +34,14 @@ const TABLE_COLUMNS = [
   { key: "height_cm", label: "Ht (cm)", tip: "Sort by Height (cm)" },
   { key: "full_category", label: "Assigned Category", tip: "Sort by Assigned Category" },
   { key: "club", label: "Club", tip: "Sort by Club / Academy" },
-  { key: "status", label: "Status", tip: "Sort by Verification Status (Verified / Flagged)" },
 ];
 
 const DIVISIONS = ["All", "Sub-Jr", "Cadet", "Junior", "Senior"];
 
-function isAthleteFlagged(a: Pick<CategorizedAthlete, "notes" | "age_group" | "weight_class">): boolean {
-  return (Boolean(a.notes && a.notes.length > 0)) || a.age_group === "Unknown" || a.weight_class === "Unassigned";
+function getCategoryAssignmentMode(a: Pick<CategorizedAthlete, "weight_kg" | "height_category" | "age_group" | "weight_class">): "weight" | "height" | "unassigned" {
+  if (a.age_group === "Unknown" || a.weight_class === "Unassigned") return "unassigned";
+  if ((a.weight_kg === null || a.weight_kg === undefined) && a.height_category) return "height";
+  return "weight";
 }
 
 function getVisiblePages(current: number, total: number): (number | "dots")[] {
@@ -69,7 +70,7 @@ export const AthletesTable: React.FC<AthletesTableProps> = ({
   const [searchQuery, setSearchQuery] = useState("");
   const [showFilters, setShowFilters] = useState(false);
   const [filterGender, setFilterGender] = useState<"All" | "M" | "F">("All");
-  const [filterStatus, setFilterStatus] = useState<"All" | "Verified" | "Flagged">("All");
+  const [filterCategoryMode, setFilterCategoryMode] = useState<"All" | "weight" | "height" | "unassigned">("All");
   const [sortConfig, setSortConfig] = useState<{ key: string; dir: number }>({
     key: "sr_no",
     dir: 1,
@@ -105,7 +106,7 @@ export const AthletesTable: React.FC<AthletesTableProps> = ({
     return counts;
   }, [athletes]);
 
-  const activeExtraFilters = (filterGender !== "All" ? 1 : 0) + (filterStatus !== "All" ? 1 : 0);
+  const activeExtraFilters = (filterGender !== "All" ? 1 : 0) + (filterCategoryMode !== "All" ? 1 : 0);
 
   // Filtered & Sorted Athletes
   const filteredAthletes = useMemo(() => {
@@ -113,24 +114,18 @@ export const AthletesTable: React.FC<AthletesTableProps> = ({
     const result = athletes.filter((a) => {
       const matchDivision = filterAge === "All" || a.age_group === filterAge;
       const matchGender = filterGender === "All" || a.gender === filterGender;
-      const flagged = isAthleteFlagged(a);
-      const matchStatus =
-        filterStatus === "All" || (filterStatus === "Flagged" ? flagged : !flagged);
+      const matchCategoryMode =
+        filterCategoryMode === "All" || getCategoryAssignmentMode(a) === filterCategoryMode;
       const matchSearch =
         !query ||
         `${a.name} ${a.club ?? ""} ${a.full_category} ${a.weight_class}`
           .toLowerCase()
           .includes(query);
-      return matchDivision && matchGender && matchStatus && matchSearch;
+      return matchDivision && matchGender && matchCategoryMode && matchSearch;
     });
 
     const { key, dir } = sortConfig;
     return result.sort((a: any, b: any) => {
-      if (key === "status") {
-        const sA = isAthleteFlagged(a) ? 1 : 0;
-        const sB = isAthleteFlagged(b) ? 1 : 0;
-        return (sA - sB) * dir;
-      }
       const valA = a[key] ?? "";
       const valB = b[key] ?? "";
       if (typeof valA === "number" && typeof valB === "number") {
@@ -138,7 +133,7 @@ export const AthletesTable: React.FC<AthletesTableProps> = ({
       }
       return String(valA).localeCompare(String(valB), undefined, { numeric: true }) * dir;
     });
-  }, [athletes, filterAge, filterGender, filterStatus, searchQuery, sortConfig]);
+  }, [athletes, filterAge, filterGender, filterCategoryMode, searchQuery, sortConfig]);
 
   const totalPages = Math.max(1, Math.ceil(filteredAthletes.length / pageSize));
   const validPage = Math.min(currentPage, totalPages - 1);
@@ -337,7 +332,7 @@ export const AthletesTable: React.FC<AthletesTableProps> = ({
           <button
             type="button"
             onClick={() => setShowFilters((v) => !v)}
-            title="Filter athletes by gender or verification status"
+            title="Filter athletes by gender or assigned category mode"
             className={`h-9 px-3 rounded-lg border text-xs font-medium inline-flex items-center gap-1.5 transition-colors shadow-xs ${
               showFilters || activeExtraFilters > 0
                 ? "border-primary/50 bg-primary/10 text-primary"
@@ -420,24 +415,31 @@ export const AthletesTable: React.FC<AthletesTableProps> = ({
 
           <div className="flex items-center gap-1.5">
             <span className="font-semibold text-muted-foreground uppercase tracking-wider text-[11px]">
-              Status:
+              Assigned Category:
             </span>
-            {(["All", "Verified", "Flagged"] as const).map((st) => (
+            {(
+              [
+                { id: "All", label: "All Categories", tip: "Show all athletes regardless of category source" },
+                { id: "weight", label: "Weight Class", tip: "Athletes assigned to a division weight class" },
+                { id: "height", label: "Height Bracket", tip: "Athletes assigned by height bracket (weight omitted)" },
+                { id: "unassigned", label: "Unassigned", tip: "Athletes missing category assignment" },
+              ] as const
+            ).map((opt) => (
               <button
-                key={st}
+                key={opt.id}
                 type="button"
                 onClick={() => {
-                  setFilterStatus(st);
+                  setFilterCategoryMode(opt.id);
                   setCurrentPage(0);
                 }}
-                title={`Filter verification status: ${st}`}
+                title={opt.tip}
                 className={`px-2.5 py-1 rounded-md font-semibold transition-colors ${
-                  filterStatus === st
+                  filterCategoryMode === opt.id
                     ? "bg-primary text-primary-foreground"
                     : "bg-card border border-border text-muted-foreground hover:text-foreground"
                 }`}
               >
-                {st}
+                {opt.label}
               </button>
             ))}
           </div>
@@ -447,10 +449,10 @@ export const AthletesTable: React.FC<AthletesTableProps> = ({
               type="button"
               onClick={() => {
                 setFilterGender("All");
-                setFilterStatus("All");
+                setFilterCategoryMode("All");
                 setCurrentPage(0);
               }}
-              title="Reset gender and status filters"
+              title="Reset gender and assigned category filters"
               className="ml-auto text-xs font-semibold text-primary hover:underline"
             >
               Reset filters
@@ -598,8 +600,8 @@ export const AthletesTable: React.FC<AthletesTableProps> = ({
                       <span
                         className={`inline-flex h-6 w-6 items-center justify-center rounded-md text-xs font-bold ${
                           a.gender === "M"
-                            ? "bg-male/15 text-male"
-                            : "bg-female/15 text-female"
+                            ? "bg-blue-50 text-blue-600 dark:bg-male/20 dark:text-male"
+                            : "bg-pink-50 text-pink-600 dark:bg-female/20 dark:text-female"
                         }`}
                       >
                         {a.gender}
@@ -681,29 +683,35 @@ export const AthletesTable: React.FC<AthletesTableProps> = ({
 
                   {/* 7. Assigned Category (Live-updating preview while Editing!) */}
                   <td className="whitespace-nowrap px-3 py-2">
-                    {isEditing && inlinePreview ? (
-                      <div className="flex items-center gap-2">
-                        <DivisionBadge group={inlinePreview.age_group} />
-                        <span className="font-semibold text-primary text-xs">
-                          {inlinePreview.weight_class}
-                        </span>
-                        {inlinePreview.height_category && inlinePreview.weight_kg && (
-                          <span className="text-muted-foreground text-xs">
-                            · {inlinePreview.height_category}
+                    {(() => {
+                      const target = isEditing && inlinePreview ? inlinePreview : a;
+                      const byHeightOnly = !target.weight_kg && Boolean(target.height_category);
+                      return (
+                        <div className="flex items-center gap-2">
+                          <DivisionBadge group={target.age_group} />
+                          <span
+                            className={`font-semibold ${
+                              isEditing && inlinePreview ? "text-primary text-xs" : "text-foreground"
+                            }`}
+                          >
+                            {target.weight_class}
                           </span>
-                        )}
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-2">
-                        <DivisionBadge group={a.age_group} />
-                        <span className="font-semibold text-foreground">{a.weight_class}</span>
-                        {a.height_category && a.weight_kg && (
-                          <span className="text-muted-foreground text-xs">
-                            · {a.height_category}
-                          </span>
-                        )}
-                      </div>
-                    )}
+                          {target.height_category && target.weight_kg && (
+                            <span className="text-muted-foreground text-xs">
+                              · {target.height_category}
+                            </span>
+                          )}
+                          {byHeightOnly && (
+                            <span
+                              title="Assigned from height bracket because weight was not provided"
+                              className="rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground"
+                            >
+                              Ht
+                            </span>
+                          )}
+                        </div>
+                      );
+                    })()}
                   </td>
 
                   {/* 8. Club (Inline Input when Editing) */}
@@ -723,37 +731,7 @@ export const AthletesTable: React.FC<AthletesTableProps> = ({
                     )}
                   </td>
 
-                  {/* 9. Status Pill (Verified / Flagged - updates live when Editing) */}
-                  <td className="whitespace-nowrap px-3 py-2">
-                    {(() => {
-                      const target = isEditing && inlinePreview ? inlinePreview : a;
-                      const flagged = isAthleteFlagged(target);
-                      const noteSummary = target.notes?.length
-                        ? target.notes.join("; ")
-                        : flagged
-                        ? "Category unresolved or needs verification"
-                        : "Verified classification";
-                      return flagged ? (
-                        <span
-                          title={noteSummary}
-                          className="inline-flex items-center gap-1 rounded-full bg-warning/15 border border-warning/30 px-2.5 py-0.5 text-xs font-semibold text-warning"
-                        >
-                          <AlertTriangle className="h-3 w-3 shrink-0" />
-                          <span>Flagged</span>
-                        </span>
-                      ) : (
-                        <span
-                          title={noteSummary}
-                          className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 border border-emerald-500/25 px-2.5 py-0.5 text-xs font-semibold text-emerald-700 dark:text-emerald-300"
-                        >
-                          <CheckCircle2 className="h-3 w-3 shrink-0" />
-                          <span>Verified</span>
-                        </span>
-                      );
-                    })()}
-                  </td>
-
-                  {/* 10. Actions (Save/Cancel inline when Editing, Eye/Pencil/Trash otherwise) */}
+                  {/* 9. Actions (Save/Cancel inline when Editing, Eye/Pencil/Trash otherwise) */}
                   <td className="px-3 py-2 text-right whitespace-nowrap">
                     {isEditing ? (
                       <div className="inline-flex items-center gap-1">
@@ -814,7 +792,7 @@ export const AthletesTable: React.FC<AthletesTableProps> = ({
 
             {paginatedAthletes.length === 0 && (
               <tr>
-                <td colSpan={11} className="px-3 py-16 text-center text-muted-foreground">
+                <td colSpan={10} className="px-3 py-16 text-center text-muted-foreground">
                   No athletes found matching the active selection.
                 </td>
               </tr>
