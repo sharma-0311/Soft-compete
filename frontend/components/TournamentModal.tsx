@@ -99,245 +99,318 @@ export const TournamentModal: React.FC<TournamentModalProps> = ({
     }
   };
 
+  const canAdvance = Boolean(name.trim()) && !duplicateConflict;
+
   return (
     <div
       onClick={onClose}
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/75 backdrop-blur-sm animate-in fade-in duration-150"
+      className="fixed inset-0 z-50 flex justify-end bg-slate-900/45 backdrop-blur-[1px] animate-in fade-in duration-150"
     >
+      {/* Right Slide-Over Drawer matching Add athlete drawer */}
       <div
         onClick={(e) => e.stopPropagation()}
-        className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xl max-w-lg w-full overflow-hidden text-slate-900 dark:text-slate-100 flex flex-col"
+        className="bg-card text-card-foreground h-full w-full max-w-[490px] shadow-2xl border-l border-border flex flex-col transition-all duration-200"
       >
-        {/* Header */}
-        <div className="p-5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50 dark:bg-slate-950">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-white">
-              <Trophy className="w-4 h-4" />
+        {/* 1. Drawer Header & Step Tabs */}
+        <div className="px-6 pt-5 pb-4 border-b border-border/70 shrink-0">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                <Trophy className="w-4 h-4" />
+              </div>
+              <div>
+                <h2 className="font-display text-2xl font-bold tracking-tight text-foreground">
+                  New competition
+                </h2>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Isolated event workspace · Step {step} of 3
+                </p>
+              </div>
             </div>
-            <div>
-              <h3 className="font-extrabold text-base">New Isolated Competition</h3>
-              <p className="text-xs text-slate-500">Step {step} of 3 • Separate roster, rules & weigh-in</p>
-            </div>
+
+            <button
+              type="button"
+              onClick={onClose}
+              title="Close New competition drawer"
+              aria-label="Close drawer"
+              className="inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground px-2 py-1 rounded-md hover:bg-muted transition-colors"
+            >
+              <span>Close</span>
+              <X className="h-4 w-4" />
+            </button>
           </div>
 
-          <button
-            type="button"
-            onClick={onClose}
-            title="Close new tournament wizard"
-            className="p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors"
-          >
-            <X className="w-5 h-5" />
-          </button>
+          {/* Step Switcher Tabs matching One athlete / Quick Grid tabs */}
+          <div className="flex items-center gap-2 mt-3.5">
+            <button
+              type="button"
+              onClick={() => setStep(1)}
+              title="Step 1: Competition name, date, and venue"
+              className={`px-3.5 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                step === 1
+                  ? "bg-primary text-primary-foreground shadow-sm"
+                  : "border border-border bg-card text-foreground hover:bg-muted"
+              }`}
+            >
+              1. Details
+            </button>
+            <button
+              type="button"
+              disabled={!canAdvance}
+              onClick={() => canAdvance && setStep(2)}
+              title="Step 2: Choose competition classification rule profile"
+              className={`px-3.5 py-1.5 rounded-lg text-sm font-medium transition-colors disabled:opacity-45 disabled:cursor-not-allowed ${
+                step === 2
+                  ? "bg-primary text-primary-foreground shadow-sm"
+                  : "border border-border bg-card text-foreground hover:bg-muted"
+              }`}
+            >
+              2. Rules
+            </button>
+            <button
+              type="button"
+              disabled={!canAdvance}
+              onClick={() => canAdvance && setStep(3)}
+              title="Step 3: Review and launch isolated competition workspace"
+              className={`px-3.5 py-1.5 rounded-lg text-sm font-medium transition-colors disabled:opacity-45 disabled:cursor-not-allowed ${
+                step === 3
+                  ? "bg-primary text-primary-foreground shadow-sm"
+                  : "border border-border bg-card text-foreground hover:bg-muted"
+              }`}
+            >
+              3. Review
+            </button>
+          </div>
         </div>
 
-        {/* Step 1: Event Details */}
-        {step === 1 && (
-          <div className="p-6 space-y-4">
-            <div>
-              <label className="block text-xs font-bold uppercase text-slate-700 dark:text-slate-300 mb-1">
-                Competition / Event Name *
-              </label>
-              <input
-                type="text"
-                required
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="e.g. 24th District Taekwondo Championship"
-                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm font-semibold focus:ring-2 focus:ring-blue-500 focus:outline-none"
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
+        {/* 2. Scrollable Drawer Body */}
+        <div className="flex-1 overflow-y-auto px-6 py-5 space-y-4">
+          {step === 1 && (
+            <>
               <div>
-                <label className="block text-xs font-bold uppercase text-slate-700 dark:text-slate-300 mb-1">
-                  Event Date *
-                </label>
-                <input
-                  type="date"
-                  required
-                  value={eventDate}
-                  onChange={(e) => setEventDate(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm font-mono focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold uppercase text-slate-700 dark:text-slate-300 mb-1">
-                  Discipline
+                <label className="block text-sm font-medium text-foreground mb-1.5">
+                  Competition / Event name *
                 </label>
                 <input
                   type="text"
-                  disabled
-                  value={discipline}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-800/50 text-slate-500 text-sm font-medium"
+                  autoFocus
+                  required
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="e.g. 24th District Taekwondo Championship"
+                  title="Enter unique competition or event name"
+                  className="h-10 w-full rounded-lg border border-input bg-background px-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/60"
                 />
               </div>
-            </div>
 
-            <div>
-              <label className="block text-xs font-bold uppercase text-slate-700 dark:text-slate-300 mb-1">
-                Venue & Location
-              </label>
-              <input
-                type="text"
-                value={location}
-                onChange={(e) => setLocation(e.target.value)}
-                placeholder="e.g. State Sports Complex, Hall B"
-                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
-              />
-            </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                <div>
+                  <label className="block text-sm font-medium text-foreground mb-1.5">
+                    Event date *
+                  </label>
+                  <input
+                    type="date"
+                    required
+                    value={eventDate}
+                    onChange={(e) => setEventDate(e.target.value)}
+                    title="Select competition date for age calculation"
+                    className="h-10 w-full rounded-lg border border-input bg-background px-3 text-sm text-foreground tabular-nums focus:outline-none focus:ring-2 focus:ring-ring/60"
+                  />
+                </div>
 
-            {duplicateConflict && (
-              <div className="p-3 rounded-xl border border-amber-500/40 bg-amber-500/10 text-xs text-amber-700 dark:text-amber-300 flex items-start gap-2">
-                <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
-                <span>
-                  A competition named <b>&ldquo;{duplicateConflict.name}&rdquo;</b> on{" "}
-                  <b>{duplicateConflict.event_date}</b> already exists. Use a distinct name or date so events stay separate with zero conflict.
-                </span>
+                <div>
+                  <label className="block text-sm font-medium text-foreground mb-1.5">
+                    Discipline
+                  </label>
+                  <input
+                    type="text"
+                    disabled
+                    value={discipline}
+                    title="Competition discipline"
+                    className="h-10 w-full rounded-lg border border-border bg-muted/50 px-3 text-sm text-muted-foreground font-medium"
+                  />
+                </div>
               </div>
-            )}
 
-            <div className="pt-3 flex justify-end">
-              <button
-                type="button"
-                disabled={!name.trim() || Boolean(duplicateConflict)}
-                onClick={() => setStep(2)}
-                title={
-                  duplicateConflict
-                    ? "Use a unique competition name or date first"
-                    : "Proceed to Step 2: Select competition rules profile"
-                }
-                className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-45 disabled:cursor-not-allowed text-white rounded-xl font-bold text-xs flex items-center gap-1.5 transition-colors shadow-md"
-              >
-                <span>Next: Choose Rules</span>
-                <ArrowRight className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
-        )}
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-1.5">
+                  Venue & location
+                </label>
+                <input
+                  type="text"
+                  value={location}
+                  onChange={(e) => setLocation(e.target.value)}
+                  placeholder="e.g. State Sports Complex, Hall B"
+                  title="Enter competition venue or stadium"
+                  className="h-10 w-full rounded-lg border border-input bg-background px-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/60"
+                />
+              </div>
 
-        {/* Step 2: Competition Rules Profile */}
-        {step === 2 && (
-          <div className="p-6 space-y-4">
-            <label className="block text-xs font-bold uppercase text-slate-700 dark:text-slate-300">
-              Select Competition Rule Profile
-            </label>
+              {duplicateConflict && (
+                <div className="p-3 rounded-lg border border-amber-500/40 bg-amber-500/10 text-xs text-amber-700 dark:text-amber-300 flex items-start gap-2">
+                  <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+                  <span>
+                    A competition named <b>&ldquo;{duplicateConflict.name}&rdquo;</b> on{" "}
+                    <b>{duplicateConflict.event_date}</b> already exists. Use a distinct name or date so events stay separate with zero conflict.
+                  </span>
+                </div>
+              )}
+            </>
+          )}
 
-            <div className="space-y-3">
+          {step === 2 && (
+            <div className="space-y-3.5">
+              <p className="text-sm font-medium text-foreground">
+                Select competition rule profile
+              </p>
+
               {/* Profile A: 2026 Tournament Specific */}
               <div
                 onClick={() => setRuleProfile("tourn2026")}
-                className={`p-3.5 rounded-xl border-2 cursor-pointer transition-all ${
+                className={`p-4 rounded-xl border-2 cursor-pointer transition-all ${
                   ruleProfile === "tourn2026"
-                    ? "border-blue-600 bg-blue-50/60 dark:bg-blue-950/40"
-                    : "border-slate-200 dark:border-slate-800 hover:border-slate-300"
+                    ? "border-primary bg-primary/5"
+                    : "border-border bg-background hover:bg-muted/40"
                 }`}
               >
-                <div className="flex items-center justify-between">
-                  <span className="font-bold text-sm text-slate-900 dark:text-white">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="font-semibold text-sm text-foreground">
                     2026 Championship Specification (Recommended)
                   </span>
-                  {ruleProfile === "tourn2026" && <CheckCircle2 className="w-5 h-5 text-blue-600" />}
+                  {ruleProfile === "tourn2026" && <CheckCircle2 className="w-5 h-5 text-primary shrink-0" />}
                 </div>
-                <p className="text-xs text-slate-500 mt-1">
-                  Sub-Jr (2015-2019, 10 wt + 12 ht brackets), Cadet (2012-2014), Junior (2009-2011), Senior (2008 & earlier).
+                <p className="text-xs text-muted-foreground mt-1.5">
+                  Sub-Jr (10 weight + 12 height brackets), Cadet, Junior, Senior — anchored cleanly to {eventDate}.
                 </p>
               </div>
 
               {/* Profile B: World Taekwondo 2026 Reference */}
               <div
                 onClick={() => setRuleProfile("wt2026")}
-                className={`p-3.5 rounded-xl border-2 cursor-pointer transition-all ${
+                className={`p-4 rounded-xl border-2 cursor-pointer transition-all ${
                   ruleProfile === "wt2026"
-                    ? "border-blue-600 bg-blue-50/60 dark:bg-blue-950/40"
-                    : "border-slate-200 dark:border-slate-800 hover:border-slate-300"
+                    ? "border-primary bg-primary/5"
+                    : "border-border bg-background hover:bg-muted/40"
                 }`}
               >
-                <div className="flex items-center justify-between">
-                  <span className="font-bold text-sm text-slate-900 dark:text-white">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="font-semibold text-sm text-foreground">
                     World Taekwondo (WT) Standard Reference
                   </span>
-                  {ruleProfile === "wt2026" && <CheckCircle2 className="w-5 h-5 text-blue-600" />}
+                  {ruleProfile === "wt2026" && <CheckCircle2 className="w-5 h-5 text-primary shrink-0" />}
                 </div>
-                <p className="text-xs text-slate-500 mt-1">
-                  Competition year age calculation: Cadet 12-14, Junior 15-17, Senior 17+ with official WT 8-category weight divisions.
+                <p className="text-xs text-muted-foreground mt-1.5">
+                  Competition-year age divisions (Sub-Jr 8-11, Cadet 12-14, Junior 15-17, Senior 18+) for {eventDate}.
                 </p>
               </div>
             </div>
+          )}
 
-            <div className="pt-3 flex items-center justify-between">
-              <button
-                type="button"
-                onClick={() => setStep(1)}
-                title="Return to Step 1: Event details"
-                className="px-4 py-2 border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-semibold"
-              >
-                Back
-              </button>
-              <button
-                type="button"
-                onClick={() => setStep(3)}
-                title="Proceed to Step 3: Review and create tournament"
-                className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-xs flex items-center gap-1.5 transition-colors shadow-md"
-              >
-                <span>Next: Review & Finish</span>
-                <ArrowRight className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
-        )}
+          {step === 3 && (
+            <div className="space-y-4">
+              {/* Highlighted Isolated Workspace Summary Card matching ManualEntryModal preview */}
+              <div className="rounded-xl border border-emerald-500/30 bg-emerald-50/70 dark:bg-emerald-950/30 p-4 space-y-2.5">
+                <div className="text-[11px] font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-300">
+                  Isolated Competition Workspace Preview
+                </div>
+                <div className="text-lg font-bold text-foreground">
+                  {name.trim() || "Untitled Competition"}
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  {eventDate} · {location.trim() || "Venue not specified"}
+                </div>
+              </div>
 
-        {/* Step 3: Review & Create */}
-        {step === 3 && (
-          <div className="p-6 space-y-4">
-            <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 space-y-2 text-xs">
-              <div className="flex justify-between py-1 border-b border-slate-200 dark:border-slate-800">
-                <span className="text-slate-500">Tournament Title:</span>
-                <span className="font-bold text-slate-900 dark:text-white">{name}</span>
+              <div className="p-4 rounded-xl bg-muted/35 border border-border space-y-2.5 text-xs">
+                <div className="flex justify-between py-1 border-b border-border/70">
+                  <span className="text-muted-foreground">Rule profile:</span>
+                  <span className="font-semibold text-primary">
+                    {ruleProfile === "tourn2026" ? "2026 Championship Spec" : "World Taekwondo Spec"}
+                  </span>
+                </div>
+                <div className="flex justify-between py-1 border-b border-border/70">
+                  <span className="text-muted-foreground">Discipline:</span>
+                  <span className="font-semibold text-foreground">{discipline}</span>
+                </div>
+                <div className="flex justify-between py-1">
+                  <span className="text-muted-foreground">Initial roster:</span>
+                  <span className="font-semibold text-emerald-600 dark:text-emerald-400">
+                    Clean Empty Roster (Isolated)
+                  </span>
+                </div>
               </div>
-              <div className="flex justify-between py-1 border-b border-slate-200 dark:border-slate-800">
-                <span className="text-slate-500">Event Date:</span>
-                <span className="font-bold text-slate-900 dark:text-white">{eventDate}</span>
-              </div>
-              <div className="flex justify-between py-1 border-b border-slate-200 dark:border-slate-800">
-                <span className="text-slate-500">Venue:</span>
-                <span className="font-bold text-slate-900 dark:text-white">{location}</span>
-              </div>
-              <div className="flex justify-between py-1 border-b border-slate-200 dark:border-slate-800">
-                <span className="text-slate-500">Rule Profile:</span>
-                <span className="font-bold text-blue-600 dark:text-blue-400">
-                  {ruleProfile === "tourn2026" ? "2026 Championship Spec" : "World Taekwondo Spec"}
-                </span>
-              </div>
-              <div className="flex justify-between py-1">
-                <span className="text-slate-500">Initial Workspace:</span>
-                <span className="font-bold text-emerald-600 dark:text-emerald-400">
-                  Clean Empty Roster (Isolated)
-                </span>
-              </div>
-            </div>
 
-            <div className="pt-3 flex items-center justify-between">
-              <button
-                type="button"
-                onClick={() => setStep(2)}
-                title="Return to Step 2: Competition rules"
-                className="px-4 py-2 border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-semibold"
-              >
-                Back
-              </button>
-              <button
-                type="button"
-                disabled={loading || !name.trim() || Boolean(duplicateConflict)}
-                onClick={handleCreate}
-                title="Create isolated competition workspace with a clean empty roster"
-                className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-45 text-white rounded-xl font-bold text-sm shadow-lg shadow-emerald-600/20 flex items-center gap-1.5 transition-all"
-              >
-                {loading ? "Creating..." : "Launch Competition Workspace"}
-              </button>
+              <p className="text-xs text-muted-foreground">
+                Athletes, rules edits, weigh-in records, and reports in this competition will stay strictly separated from your other events.
+              </p>
             </div>
-          </div>
-        )}
+          )}
+        </div>
+
+        {/* 3. Pinned Drawer Footer */}
+        <div className="px-6 py-4 border-t border-border bg-card flex items-center justify-between gap-2.5 shrink-0">
+          {step === 1 ? (
+            <button
+              type="button"
+              onClick={onClose}
+              title="Cancel without creating a competition"
+              className="h-9 px-4 rounded-lg border border-border bg-card text-foreground text-sm font-medium hover:bg-muted transition-colors"
+            >
+              Cancel
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setStep(step === 3 ? 2 : 1)}
+              title={`Return to Step ${step - 1}`}
+              className="h-9 px-4 rounded-lg border border-border bg-card text-foreground text-sm font-medium hover:bg-muted transition-colors"
+            >
+              Back
+            </button>
+          )}
+
+          {step === 1 && (
+            <button
+              type="button"
+              disabled={!canAdvance}
+              onClick={() => setStep(2)}
+              title={
+                duplicateConflict
+                  ? "Use a unique competition name or date first"
+                  : "Proceed to Step 2: Select competition rules profile"
+              }
+              className="h-9 px-4 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 disabled:opacity-45 disabled:cursor-not-allowed flex items-center gap-1.5 transition-colors shadow-sm"
+            >
+              <span>Next: Rules</span>
+              <ArrowRight className="w-4 h-4" />
+            </button>
+          )}
+
+          {step === 2 && (
+            <button
+              type="button"
+              disabled={!canAdvance}
+              onClick={() => setStep(3)}
+              title="Proceed to Step 3: Review and launch competition"
+              className="h-9 px-4 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 disabled:opacity-45 disabled:cursor-not-allowed flex items-center gap-1.5 transition-colors shadow-sm"
+            >
+              <span>Next: Review</span>
+              <ArrowRight className="w-4 h-4" />
+            </button>
+          )}
+
+          {step === 3 && (
+            <button
+              type="button"
+              disabled={loading || !canAdvance}
+              onClick={handleCreate}
+              title="Create isolated competition workspace with a clean empty roster"
+              className="h-9 px-4 rounded-lg bg-emerald-700 hover:bg-emerald-800 disabled:opacity-45 text-white text-sm font-semibold shadow-sm flex items-center gap-1.5 transition-colors"
+            >
+              {loading ? "Creating..." : "Launch competition"}
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );
