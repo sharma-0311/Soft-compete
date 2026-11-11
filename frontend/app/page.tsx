@@ -632,17 +632,17 @@ export default function HomePage() {
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col font-sans transition-colors selection:bg-primary selection:text-primary-foreground relative overflow-x-clip">
       {/* Unified Taekwondo Top Hero Artwork Backdrop shown cleanly across all workspace tabs */}
-      <div className="pointer-events-none absolute top-0 inset-x-0 h-[210px] sm:h-[200px] overflow-hidden">
+      <div className="pointer-events-none absolute top-0 inset-x-0 h-[240px] sm:h-[205px] overflow-hidden">
         <div className="max-w-[1400px] mx-auto relative h-full">
           <img
             src="/tkd-hero-banner.jpg"
             alt=""
             aria-hidden="true"
-            className="ml-auto h-full w-full md:w-[70%] lg:w-[58%] object-cover object-[88%_18%] opacity-60 dark:opacity-25"
+            className="ml-auto h-full w-full md:w-[70%] lg:w-[58%] object-cover object-[85%_18%] opacity-45 sm:opacity-60 dark:opacity-25"
           />
         </div>
-        <div className="absolute inset-0 bg-gradient-to-r from-background via-background/95 via-[48%] to-background/20 dark:from-background dark:via-background/95 dark:via-[50%] dark:to-background/50" />
-        <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-background via-background/75 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-r from-background via-background/95 via-[62%] sm:via-[48%] to-background/25 dark:from-background dark:via-background/95 dark:via-[65%] sm:dark:via-[50%] dark:to-background/50" />
+        <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-background via-background/80 to-transparent" />
       </div>
 
       {/* 1. Global Navigation Header */}
@@ -664,37 +664,37 @@ export default function HomePage() {
 
       {/* 2. Success Toast Banner */}
       {successToast && (
-        <div className="fixed bottom-5 right-5 z-50 bg-foreground text-background px-4 py-2.5 rounded-md shadow-2xl font-display text-sm font-semibold flex items-center gap-2 animate-in slide-in-from-bottom duration-200">
-          <CheckCircle2 className="w-4 h-4 text-success" />
-          <span>{successToast}</span>
+        <div className="fixed inset-x-3 bottom-3 sm:inset-x-auto sm:bottom-5 sm:right-5 sm:max-w-md z-50 bg-foreground text-background px-4 py-2.5 rounded-lg shadow-2xl font-display text-sm font-semibold flex items-center justify-center sm:justify-start gap-2 animate-in slide-in-from-bottom duration-200">
+          <CheckCircle2 className="w-4 h-4 text-success shrink-0" />
+          <span className="truncate">{successToast}</span>
         </div>
       )}
 
       {/* 3. Main Workspace Container */}
-      <main className="relative z-10 flex-1 max-w-[1400px] w-full mx-auto px-4 sm:px-6 pt-3 pb-6 space-y-4 print:hidden">
+      <main className="relative z-10 flex-1 max-w-[1400px] w-full mx-auto px-3 sm:px-6 pt-2.5 sm:pt-3 pb-6 space-y-3.5 sm:space-y-4 print:hidden">
         {/* TAB 1: ATHLETES ROSTER WORKSPACE */}
         {currentTab === "athletes" && (
-          <div className="space-y-4">
+          <div className="space-y-3.5 sm:space-y-4">
             {/* Operational Hero Header matching Reference Layout */}
-            <section className="relative z-30 py-2">
-              <div className="relative z-10 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+            <section className="relative z-30 py-1 sm:py-2">
+              <div className="relative z-10 flex flex-col gap-3.5 sm:gap-4 lg:flex-row lg:items-end lg:justify-between">
                 {/* Left: Event Venue, Date, Isolation Badge & Tournament Title */}
-                <div className="space-y-1 max-w-2xl">
-                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs font-medium text-muted-foreground">
-                    <span className="inline-flex items-center gap-1.5">
+                <div className="space-y-1 max-w-2xl min-w-0">
+                  <div className="flex flex-wrap items-center gap-x-3 sm:gap-x-4 gap-y-1 text-xs font-medium text-muted-foreground">
+                    <span className="inline-flex items-center gap-1.5 min-w-0">
                       <MapPin className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                      <span>
+                      <span className="truncate max-w-[220px] sm:max-w-none">
                         {currentEvent?.location || "Venue not specified"}
                       </span>
                     </span>
-                    <span className="inline-flex items-center gap-1.5 tabular-nums">
+                    <span className="inline-flex items-center gap-1.5 tabular-nums shrink-0">
                       <Calendar className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                       <span>{currentEvent?.event_date || activeRules.event_date || "2026-10-24"}</span>
                     </span>
                     {currentEvent && (
                       <span
                         title="Athletes, rules, and weigh-in records are strictly isolated per competition"
-                        className="inline-flex items-center gap-1 rounded-md border border-border bg-card/90 px-2 py-0.5 text-[11px] font-semibold text-foreground shadow-sm"
+                        className="inline-flex items-center gap-1 rounded-md border border-border bg-card/90 px-2 py-0.5 text-[11px] font-semibold text-foreground shadow-sm shrink-0"
                       >
                         <ShieldCheck className="h-3 w-3 text-emerald-600 dark:text-emerald-400" />
                         <span>
@@ -709,24 +709,24 @@ export default function HomePage() {
                     )}
                   </div>
 
-                  <h1 className="font-display text-3xl sm:text-[36px] font-bold uppercase tracking-tight leading-none text-foreground pt-1">
+                  <h1 className="font-display text-2xl sm:text-3xl lg:text-[36px] font-bold uppercase tracking-tight leading-tight sm:leading-none text-foreground pt-1 break-words">
                     {currentEvent?.name || "2026 DISTRICT TAEKWONDO CHAMPIONSHIP"}
                   </h1>
-                  <p className="text-sm text-muted-foreground pt-0.5">
+                  <p className="text-xs sm:text-sm text-muted-foreground pt-0.5">
                     Manage registrations and verify tournament categories.
                   </p>
                 </div>
 
-                {/* Right: Operational Action Strip (Solid card buttons so labels read sharply over artwork) */}
-                <div className="flex flex-wrap items-center gap-2">
+                {/* Right: Operational Action Strip (Clean 2-col grid on mobile, inline flex bar on desktop) */}
+                <div className="grid grid-cols-2 sm:flex sm:flex-wrap sm:items-center gap-2 w-full lg:w-auto">
                   {/* 1. Primary Action: Add Athletes */}
                   <button
                     type="button"
                     onClick={() => setShowManualModal(true)}
                     title="Open Add athlete drawer (Single or Quick Grid bulk entry)"
-                    className="h-9 px-4 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 flex items-center gap-2 transition-colors shadow-sm"
+                    className="col-span-2 sm:col-span-1 h-10 sm:h-9 px-4 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 flex items-center justify-center gap-2 transition-colors shadow-sm"
                   >
-                    <UserPlus className="h-4 w-4" />
+                    <UserPlus className="h-4 w-4 shrink-0" />
                     <span>Add Athletes</span>
                   </button>
 
@@ -735,9 +735,9 @@ export default function HomePage() {
                     type="button"
                     onClick={() => setShowExcelModal(true)}
                     title="Import athletes from Excel (.xlsx) or CSV spreadsheet"
-                    className="h-9 px-3.5 rounded-lg border border-border bg-card hover:bg-muted text-sm font-medium text-foreground flex items-center gap-2 transition-colors shadow-sm"
+                    className="h-9 px-3 sm:px-3.5 rounded-lg border border-border bg-card hover:bg-muted text-xs sm:text-sm font-medium text-foreground flex items-center justify-center gap-1.5 sm:gap-2 transition-colors shadow-sm whitespace-nowrap"
                   >
-                    <FileUp className="h-4 w-4 text-muted-foreground" />
+                    <FileUp className="h-4 w-4 text-muted-foreground shrink-0" />
                     <span>Import file</span>
                   </button>
 
@@ -747,9 +747,9 @@ export default function HomePage() {
                     onClick={() => setShowPrintModal(true)}
                     disabled={!athletes.length}
                     title={athletes.length ? "Open printable official weigh-in sheet" : "Add athletes first to print weigh-in sheet"}
-                    className="h-9 px-3.5 rounded-lg border border-border bg-card hover:bg-muted text-sm font-medium text-foreground flex items-center gap-2 transition-colors shadow-sm disabled:opacity-65 disabled:cursor-not-allowed"
+                    className="h-9 px-3 sm:px-3.5 rounded-lg border border-border bg-card hover:bg-muted text-xs sm:text-sm font-medium text-foreground flex items-center justify-center gap-1.5 sm:gap-2 transition-colors shadow-sm disabled:opacity-65 disabled:cursor-not-allowed whitespace-nowrap"
                   >
-                    <Printer className="h-4 w-4 text-muted-foreground" />
+                    <Printer className="h-4 w-4 text-muted-foreground shrink-0" />
                     <span>Weigh-in sheet</span>
                   </button>
 
@@ -759,9 +759,9 @@ export default function HomePage() {
                     onClick={handleClearRoster}
                     disabled={!athletes.length}
                     title={athletes.length ? "Clear all athletes from current roster" : "Roster is already empty"}
-                    className="h-9 px-3 rounded-lg border border-border bg-card text-sm font-medium text-foreground hover:text-destructive hover:bg-muted flex items-center gap-1.5 transition-colors shadow-sm disabled:opacity-65 disabled:cursor-not-allowed"
+                    className="h-9 px-3 rounded-lg border border-border bg-card text-xs sm:text-sm font-medium text-foreground hover:text-destructive hover:bg-muted flex items-center justify-center gap-1.5 transition-colors shadow-sm disabled:opacity-65 disabled:cursor-not-allowed whitespace-nowrap"
                   >
-                    <Trash2 className="h-4 w-4 text-muted-foreground" />
+                    <Trash2 className="h-4 w-4 text-muted-foreground shrink-0" />
                     <span>Clear</span>
                   </button>
 
@@ -771,7 +771,7 @@ export default function HomePage() {
                       type="button"
                       onClick={() => setShowActionsDropdown(!showActionsDropdown)}
                       title="Load demo athletes, 500-athlete stress test, exports, and database sync"
-                      className="h-9 px-3 rounded-lg border border-border bg-card hover:bg-muted text-sm font-medium text-foreground flex items-center gap-1.5 transition-colors shadow-sm"
+                      className="w-full sm:w-auto h-9 px-3 rounded-lg border border-border bg-card hover:bg-muted text-xs sm:text-sm font-medium text-foreground flex items-center justify-center gap-1.5 transition-colors shadow-sm whitespace-nowrap"
                     >
                       <span>More</span>
                       <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
@@ -785,7 +785,7 @@ export default function HomePage() {
                         />
                         <div
                           onClick={() => setShowActionsDropdown(false)}
-                          className="absolute right-0 mt-1.5 w-60 rounded-xl border border-border bg-card text-foreground shadow-xl py-1.5 z-50 text-xs font-medium"
+                          className="absolute right-0 mt-1.5 w-60 max-w-[calc(100vw-1.5rem)] rounded-xl border border-border bg-card text-foreground shadow-xl py-1.5 z-50 text-xs font-medium"
                         >
                           <button
                             type="button"
@@ -846,12 +846,12 @@ export default function HomePage() {
 
             {/* Error Notification */}
             {error && (
-              <div className="p-3 bg-destructive/10 text-destructive rounded-md border border-destructive/30 text-xs font-medium flex items-center justify-between">
-                <div className="flex items-center gap-2">
+              <div className="p-3 bg-destructive/10 text-destructive rounded-lg border border-destructive/30 text-xs font-medium flex flex-wrap items-center justify-between gap-2">
+                <div className="flex items-center gap-2 min-w-0">
                   <AlertTriangle className="w-4 h-4 text-destructive shrink-0" />
-                  <span>{error}</span>
+                  <span className="break-words">{error}</span>
                 </div>
-                <button onClick={() => setError(null)} title="Dismiss notification" className="font-bold underline">
+                <button type="button" onClick={() => setError(null)} title="Dismiss notification" className="font-bold underline shrink-0">
                   Dismiss
                 </button>
               </div>

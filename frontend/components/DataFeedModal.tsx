@@ -186,11 +186,11 @@ export const DataFeedModal: React.FC<DataFeedModalProps> = ({
         </div>
 
         {/* Content Body */}
-        <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4">
+        <div className="flex-1 overflow-y-auto thin-scrollbar p-4 sm:p-6 space-y-4">
           {/* Template Buttons */}
           <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
             <span className="font-semibold text-slate-700">Pre-filled Payloads:</span>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <button
                 onClick={() => handleSelectTemplate("single")}
                 title="Load single athlete JSON payload template"
@@ -269,12 +269,12 @@ export const DataFeedModal: React.FC<DataFeedModalProps> = ({
         </div>
 
         {/* Modal Footer */}
-        <div className="p-4 sm:p-5 border-t border-slate-100 bg-slate-50 flex items-center justify-between">
+        <div className="p-4 sm:p-5 border-t border-slate-100 bg-slate-50 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="text-xs text-slate-500">
             Endpoint: <code className="bg-white px-2 py-0.5 rounded border">POST /categorize/bulk</code>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
             <button
               onClick={handleSendFeed}
               disabled={loading}

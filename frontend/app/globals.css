@@ -94,11 +94,68 @@
     --gradient-hero: linear-gradient(120deg, oklch(62% 0.11 240 / 0.2), transparent 60%);
   }
 
+  html {
+    overflow-x: clip;
+    scroll-behavior: smooth;
+  }
+
   body {
     background-color: var(--background);
     color: var(--foreground);
     font-family: 'Barlow', ui-sans-serif, system-ui, sans-serif;
+    overflow-x: clip;
   }
+}
+
+@layer utilities {
+  .thin-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: oklch(var(--border-ch) / 0.9) transparent;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .thin-scrollbar::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  .thin-scrollbar::-webkit-scrollbar-track {
+    background: oklch(var(--muted-ch) / 0.35);
+    border-radius: 9999px;
+  }
+
+  .thin-scrollbar::-webkit-scrollbar-thumb {
+    background: oklch(var(--border-ch) / 0.95);
+    border-radius: 9999px;
+  }
+
+  .thin-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: oklch(var(--muted-foreground-ch) / 0.65);
+  }
+}
+
+/* Global subtle scrollbar for desktop & mobile containers */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: oklch(var(--border-ch) / 0.85) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: oklch(var(--border-ch) / 0.85);
+  border-radius: 9999px;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: oklch(var(--muted-foreground-ch) / 0.6);
 }
 
 @media print {

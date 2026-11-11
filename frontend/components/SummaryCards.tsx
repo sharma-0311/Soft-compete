@@ -161,44 +161,44 @@ export const SummaryCards: React.FC<SummaryCardsProps> = ({
   }, [athletes]);
 
   return (
-    <div className="grid gap-2.5 md:grid-cols-[1.35fr_repeat(4,1fr)] print:hidden">
-      {/* 1. Total Athletes Card (Compact) */}
+    <div className="grid gap-2.5 grid-cols-2 sm:grid-cols-4 lg:grid-cols-[1.35fr_repeat(4,1fr)] print:hidden">
+      {/* 1. Total Athletes Card (Full-width top summary on mobile/tablet, 1st column on desktop) */}
       <div
         onClick={() => onSelectAgeGroup("All")}
         title="Click to show all athletes across every age division"
-        className={`rounded-xl border p-3 sm:p-3.5 shadow-sm transition-all cursor-pointer flex flex-col justify-between bg-card ${
+        className={`col-span-2 sm:col-span-4 lg:col-span-1 rounded-xl border p-3 sm:p-3.5 shadow-sm transition-all cursor-pointer flex flex-col justify-between bg-card ${
           selectedAgeGroup === "All"
             ? "border-blue-500/60 dark:border-primary/60 ring-1 ring-blue-500/20"
             : "border-blue-500/35 dark:border-primary/40 hover:border-blue-500/60"
         }`}
       >
-        <div>
-          <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center justify-between gap-2 lg:block">
+          <div className="flex items-center justify-between gap-2 flex-1">
             <div className="flex items-center gap-1.5 text-xs font-semibold text-foreground/85 tracking-wide">
-              <Users className="h-3.5 w-3.5 text-blue-600 dark:text-primary" />
+              <Users className="h-3.5 w-3.5 text-blue-600 dark:text-primary shrink-0" />
               <span>Total Athletes</span>
             </div>
             <span
               title={`${stats.categorizedRate}% of athletes matched to an age division`}
-              className="inline-flex items-center gap-1 rounded-full bg-emerald-50 border border-emerald-200 dark:bg-emerald-500/15 dark:border-emerald-500/30 px-2 py-0.5 text-[10px] font-bold text-emerald-700 dark:text-emerald-300 tabular-nums leading-none"
+              className="inline-flex items-center gap-1 rounded-full bg-emerald-50 border border-emerald-200 dark:bg-emerald-500/15 dark:border-emerald-500/30 px-2 py-0.5 text-[10px] font-bold text-emerald-700 dark:text-emerald-300 tabular-nums leading-none shrink-0"
             >
               <span>▲</span>
               <span>{stats.categorizedRate}%</span>
             </span>
           </div>
 
-          <div className="mt-1 font-display text-[28px] font-bold leading-none tabular-nums text-foreground">
+          <div className="lg:mt-1 font-display text-2xl sm:text-[28px] font-bold leading-none tabular-nums text-foreground shrink-0">
             {total.toLocaleString()}
           </div>
         </div>
 
-        <div className="mt-2 space-y-1.5">
+        <div className="mt-2.5 lg:mt-2 grid grid-cols-2 gap-3 lg:grid-cols-1 lg:gap-0 lg:space-y-1.5">
           <ProgressBar label="Male" n={stats.maleCount} total={total} cls="bg-blue-600 dark:bg-male" />
           <ProgressBar label="Female" n={stats.femaleCount} total={total} cls="bg-pink-600 dark:bg-female" />
         </div>
 
         {total > 0 && (
-          <div className="mt-2 pt-1.5 border-t border-border/60 flex items-center justify-between gap-1.5 text-[11px] font-medium text-muted-foreground">
+          <div className="mt-2 pt-1.5 border-t border-border/60 flex flex-wrap items-center justify-between gap-1.5 text-[11px] font-medium text-muted-foreground">
             <span>{total - stats.unknownCount} assigned categories</span>
             {stats.unknownCount > 0 && (
               <span className="inline-flex items-center gap-1 text-warning font-semibold">
@@ -228,7 +228,7 @@ export const SummaryCards: React.FC<SummaryCardsProps> = ({
                 ? `Clear ${meta.label} filter and show all athletes`
                 : `Filter athletes table to ${meta.label} division (${divTotal})`
             }
-            className={`relative overflow-hidden rounded-xl border p-3 sm:p-3.5 shadow-sm transition-all cursor-pointer flex flex-col justify-between ${
+            className={`relative overflow-hidden rounded-xl border p-3 sm:p-3.5 shadow-sm transition-all cursor-pointer flex flex-col justify-between min-w-0 ${
               meta.tintClass
             } ${
               isSelected
@@ -241,34 +241,34 @@ export const SummaryCards: React.FC<SummaryCardsProps> = ({
 
             {/* Compact Taekwondo kicking silhouette watermark on right */}
             <TkdKickSilhouette
-              className={`pointer-events-none select-none absolute right-2 bottom-2.5 h-16 w-16 opacity-85 ${meta.silhouetteClass}`}
+              className={`pointer-events-none select-none absolute right-1.5 bottom-2 h-12 w-12 sm:h-14 sm:w-14 lg:h-16 lg:w-16 opacity-85 ${meta.silhouetteClass}`}
             />
 
             <div className="relative z-10">
-              <div className="flex items-center justify-between gap-1.5">
-                <div className="flex items-center gap-1.5 font-display text-xs font-bold uppercase tracking-wider text-foreground/90">
-                  <Icon className={`h-3.5 w-3.5 ${meta.textClass}`} />
-                  <span>{meta.label}</span>
+              <div className="flex items-center justify-between gap-1">
+                <div className="flex items-center gap-1.5 font-display text-[11px] sm:text-xs font-bold uppercase tracking-wider text-foreground/90 min-w-0">
+                  <Icon className={`h-3.5 w-3.5 shrink-0 ${meta.textClass}`} />
+                  <span className="truncate">{meta.label}</span>
                 </div>
                 {isSelected && (
-                  <span className="rounded bg-primary/15 px-1.5 py-0.5 text-[10px] font-bold text-primary uppercase leading-none">
+                  <span className="rounded bg-primary/15 px-1.5 py-0.5 text-[9px] sm:text-[10px] font-bold text-primary uppercase leading-none shrink-0">
                     Filtered
                   </span>
                 )}
               </div>
 
-              <div className="mt-1 font-display text-[28px] font-bold leading-none tabular-nums text-foreground">
+              <div className="mt-1 font-display text-2xl sm:text-[28px] font-bold leading-none tabular-nums text-foreground">
                 {divTotal}
               </div>
             </div>
 
-            <div className="relative z-10 mt-2.5">
-              <div className="flex gap-3 text-[11px] text-muted-foreground font-semibold">
-                <span className="flex items-center gap-1">
+            <div className="relative z-10 mt-2 sm:mt-2.5">
+              <div className="flex flex-wrap gap-x-2.5 gap-y-0.5 text-[11px] text-muted-foreground font-semibold">
+                <span className="flex items-center gap-1 tabular-nums">
                   <span className="text-male text-[9px]">●</span>
                   <span>{counts.M} M</span>
                 </span>
-                <span className="flex items-center gap-1">
+                <span className="flex items-center gap-1 tabular-nums">
                   <span className="text-female text-[9px]">●</span>
                   <span>{counts.F} F</span>
                 </span>

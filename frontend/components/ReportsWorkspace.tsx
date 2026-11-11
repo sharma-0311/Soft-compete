@@ -23,12 +23,12 @@ function ReportTable({
   rows: (React.ReactNode | string | number | null | undefined)[][];
 }) {
   return (
-    <div className="max-h-[60vh] overflow-auto rounded-xl border border-border bg-card shadow-sm">
-      <table className="w-full text-sm">
+    <div className="max-h-[60vh] overflow-auto thin-scrollbar rounded-xl border border-border bg-card shadow-sm">
+      <table className="w-full text-xs sm:text-sm">
         <thead className="sticky top-0 bg-muted/95 backdrop-blur-sm border-b border-border text-[11px] uppercase tracking-wider text-muted-foreground font-bold">
           <tr>
             {head.map((h, i) => (
-              <th key={i} className="px-4 py-3 text-left">
+              <th key={i} className="px-3 py-2.5 sm:px-4 sm:py-3 text-left whitespace-nowrap">
                 {h}
               </th>
             ))}
@@ -38,7 +38,7 @@ function ReportTable({
           {rows.map((row, idx) => (
             <tr key={idx} className="border-t border-border/70 hover:bg-muted/30">
               {row.map((cell, cIdx) => (
-                <td key={cIdx} className="px-4 py-2.5 tabular-nums text-foreground">
+                <td key={cIdx} className="px-3 py-2 sm:px-4 sm:py-2.5 tabular-nums text-foreground whitespace-nowrap">
                   {cell ?? "—"}
                 </td>
               ))}
@@ -100,27 +100,27 @@ export const ReportsWorkspace: React.FC<ReportsWorkspaceProps> = ({
   }, [athletes]);
 
   return (
-    <div className="space-y-5 print:hidden">
+    <div className="space-y-4 sm:space-y-5 print:hidden">
       {/* 1. Page Header */}
-      <div className="flex flex-wrap items-end justify-between gap-3 py-2">
-        <div>
-          <h1 className="font-display text-3xl font-bold uppercase tracking-wide text-foreground">
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 py-1 sm:py-2">
+        <div className="min-w-0">
+          <h1 className="font-display text-2xl sm:text-3xl font-bold uppercase tracking-wide text-foreground">
             Reports
           </h1>
-          <p className="text-sm text-muted-foreground mt-0.5">
+          <p className="text-xs sm:text-sm text-muted-foreground mt-0.5 break-words">
             <span className="font-semibold text-foreground">{eventTitle}</span>
             {eventDate ? ` • ${eventDate}` : ""}
             {eventLocation ? ` • ${eventLocation}` : ""} · {athletes.length} athlete{athletes.length === 1 ? "" : "s"}
           </p>
         </div>
 
-        <div className="flex gap-2">
+        <div className="w-full sm:w-auto grid grid-cols-[auto_1fr] sm:flex gap-2 shrink-0">
           <button
             type="button"
             onClick={onExportCsv}
             disabled={!athletes.length}
             title={athletes.length ? "Download roster as CSV spreadsheet" : "Add athletes first to export CSV"}
-            className="h-9 px-3.5 rounded-lg border border-border bg-card hover:bg-muted font-medium text-foreground text-xs flex items-center gap-1.5 transition-colors shadow-sm disabled:opacity-65 disabled:cursor-not-allowed"
+            className="h-9 px-3.5 rounded-lg border border-border bg-card hover:bg-muted font-medium text-foreground text-xs flex items-center justify-center gap-1.5 transition-colors shadow-sm disabled:opacity-65 disabled:cursor-not-allowed whitespace-nowrap"
           >
             <span>CSV</span>
           </button>
@@ -130,21 +130,21 @@ export const ReportsWorkspace: React.FC<ReportsWorkspaceProps> = ({
             onClick={onExportExcel}
             disabled={!athletes.length}
             title={athletes.length ? "Download styled multi-sheet Excel (.xlsx) workbook" : "Add athletes first to export Excel"}
-            className="h-9 px-4 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 font-display text-xs font-bold uppercase tracking-wide flex items-center gap-1.5 transition-colors disabled:opacity-65 shadow-sm"
+            className="h-9 px-4 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 font-display text-xs font-bold uppercase tracking-wide flex items-center justify-center gap-1.5 transition-colors disabled:opacity-65 shadow-sm whitespace-nowrap"
           >
-            <FileSpreadsheet className="h-4 w-4" />
+            <FileSpreadsheet className="h-4 w-4 shrink-0" />
             <span>Export Excel workbook</span>
           </button>
         </div>
       </div>
 
-      {/* 2. Sub-Tabs */}
-      <div className="flex gap-1 rounded-lg border border-border bg-muted/60 p-1 w-fit">
+      {/* 2. Sub-Tabs (Horizontally scrollable on narrow mobile screens) */}
+      <div className="flex max-w-full overflow-x-auto thin-scrollbar gap-1 rounded-lg border border-border bg-muted/60 p-1 w-full sm:w-fit">
         <button
           type="button"
           onClick={() => setActiveTab("categories")}
           title="View athletes grouped by assigned competition category"
-          className={`rounded-md px-3 py-1 font-display text-sm font-semibold uppercase tracking-wide transition-colors ${
+          className={`shrink-0 whitespace-nowrap rounded-md px-3 py-1.5 sm:py-1 font-display text-xs sm:text-sm font-semibold uppercase tracking-wide transition-colors ${
             activeTab === "categories"
               ? "bg-primary text-primary-foreground shadow-sm"
               : "text-muted-foreground hover:text-foreground hover:bg-card/80"
@@ -156,7 +156,7 @@ export const ReportsWorkspace: React.FC<ReportsWorkspaceProps> = ({
           type="button"
           onClick={() => setActiveTab("weighin")}
           title="View official scale weights and pass/fail statuses"
-          className={`rounded-md px-3 py-1 font-display text-sm font-semibold uppercase tracking-wide transition-colors ${
+          className={`shrink-0 whitespace-nowrap rounded-md px-3 py-1.5 sm:py-1 font-display text-xs sm:text-sm font-semibold uppercase tracking-wide transition-colors ${
             activeTab === "weighin"
               ? "bg-primary text-primary-foreground shadow-sm"
               : "text-muted-foreground hover:text-foreground hover:bg-card/80"
@@ -168,7 +168,7 @@ export const ReportsWorkspace: React.FC<ReportsWorkspaceProps> = ({
           type="button"
           onClick={() => setActiveTab("exceptions")}
           title="Review uncategorized records or warnings requiring attention"
-          className={`rounded-md px-3 py-1 font-display text-sm font-semibold uppercase tracking-wide transition-colors ${
+          className={`shrink-0 whitespace-nowrap rounded-md px-3 py-1.5 sm:py-1 font-display text-xs sm:text-sm font-semibold uppercase tracking-wide transition-colors ${
             activeTab === "exceptions"
               ? "bg-primary text-primary-foreground shadow-sm"
               : "text-muted-foreground hover:text-foreground hover:bg-card/80"
@@ -180,7 +180,7 @@ export const ReportsWorkspace: React.FC<ReportsWorkspaceProps> = ({
           type="button"
           onClick={() => setActiveTab("summary")}
           title="View registration totals grouped by club and age division"
-          className={`rounded-md px-3 py-1 font-display text-sm font-semibold uppercase tracking-wide transition-colors ${
+          className={`shrink-0 whitespace-nowrap rounded-md px-3 py-1.5 sm:py-1 font-display text-xs sm:text-sm font-semibold uppercase tracking-wide transition-colors ${
             activeTab === "summary"
               ? "bg-primary text-primary-foreground shadow-sm"
               : "text-muted-foreground hover:text-foreground hover:bg-card/80"
@@ -193,10 +193,10 @@ export const ReportsWorkspace: React.FC<ReportsWorkspaceProps> = ({
       {/* 3. Tab Contents */}
       {/* TAB A: Category Lists */}
       {activeTab === "categories" && (
-        <div className="space-y-5 pt-3">
+        <div className="space-y-5 pt-2 sm:pt-3">
           {categoriesList.map(([catName, athletesInCat]) => (
             <section key={catName}>
-              <h2 className="mb-2 flex items-center gap-2 font-display text-lg font-semibold text-foreground">
+              <h2 className="mb-2 flex flex-wrap items-center gap-2 font-display text-base sm:text-lg font-semibold text-foreground">
                 <DivisionBadge group={athletesInCat[0].age_group} />
                 <span>{catName}</span>
                 <span className="text-sm font-normal text-muted-foreground">

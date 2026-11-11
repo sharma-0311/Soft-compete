@@ -22,7 +22,7 @@ export function DivisionBadge({
   const style = DIVISION_STYLES[group] || DIVISION_STYLES.Unknown;
   return (
     <span
-      className={`inline-flex items-center rounded-md border px-2 py-0.5 font-display text-[11px] font-bold uppercase tracking-wider leading-none ${style} ${className}`}
+      className={`inline-flex shrink-0 whitespace-nowrap items-center rounded-md border px-2 py-0.5 font-display text-[11px] font-bold uppercase tracking-wider leading-none ${style} ${className}`}
     >
       {group}
     </span>

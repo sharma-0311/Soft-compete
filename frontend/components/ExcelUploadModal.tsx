@@ -48,7 +48,7 @@ export const ExcelUploadModal: React.FC<ExcelUploadModalProps> = ({
     } catch (err: any) {
       setError(
         err.message ||
-          "Spreadsheet upload failed. Please ensure required columns (Name, Weight) are present."
+        "Spreadsheet upload failed. Please ensure required columns (Name, Weight) are present."
       );
     } finally {
       setLoading(false);
@@ -88,19 +88,20 @@ export const ExcelUploadModal: React.FC<ExcelUploadModalProps> = ({
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="bg-card text-card-foreground rounded-lg border border-border shadow-2xl max-w-xl w-full p-6 space-y-4 relative"
+        className="bg-card text-card-foreground rounded-lg border border-border shadow-2xl max-w-xl w-full max-h-[92vh] overflow-y-auto thin-scrollbar p-4 sm:p-6 space-y-4 relative"
       >
         {/* Close Button */}
         <button
+          type="button"
           onClick={onClose}
           title="Close import modal"
-          className="absolute top-4 right-4 p-1 rounded text-muted-foreground hover:text-foreground transition-colors"
+          className="absolute top-3.5 right-3.5 sm:top-4 sm:right-4 p-1 rounded text-muted-foreground hover:text-foreground transition-colors"
         >
           <X className="h-5 w-5" />
         </button>
 
         {/* Header */}
-        <div>
+        <div className="pr-8">
           <h2 className="font-display text-xl font-bold uppercase tracking-wide text-foreground">
             Import Excel / CSV
           </h2>
@@ -124,11 +125,10 @@ export const ExcelUploadModal: React.FC<ExcelUploadModalProps> = ({
           }}
           onDragLeave={() => setDragActive(false)}
           onDrop={handleDrop}
-          className={`grid cursor-pointer place-items-center rounded-lg border-2 border-dashed p-8 text-center transition-colors ${
-            dragActive
+          className={`grid cursor-pointer place-items-center rounded-lg border-2 border-dashed p-5 sm:p-8 text-center transition-colors ${dragActive
               ? "border-primary bg-primary/10"
               : "border-border hover:border-primary/60 bg-muted/20"
-          }`}
+            }`}
         >
           {loading ? (
             <Loader2 className="h-8 w-8 animate-spin text-primary" />

@@ -42,11 +42,11 @@ export const Navbar: React.FC<NavbarProps> = ({
 
   return (
     <header className="relative z-40 transition-colors">
-      <div className="max-w-[1400px] mx-auto px-4 sm:px-6">
+      <div className="max-w-[1400px] mx-auto px-3 sm:px-6">
         {/* Main Header Row */}
-        <div className="flex items-center justify-between h-14 gap-3">
+        <div className="flex items-center justify-between h-14 gap-2 sm:gap-3">
           {/* Logo, Title & Primary Pill Navigation Tabs */}
-          <div className="flex items-center gap-3.5">
+          <div className="flex items-center gap-3.5 shrink-0">
             <div className="flex items-center gap-2 shrink-0">
               <div className="w-8 h-8 rounded-lg bg-primary text-primary-foreground flex items-center justify-center font-display font-bold text-sm tracking-wide shadow-sm">
                 TKD
@@ -116,26 +116,26 @@ export const Navbar: React.FC<NavbarProps> = ({
           </div>
 
           {/* Right Controls: Isolated Competition Switcher, Rules, Theme (Opaque card surfaces for crisp readability over hero artwork) */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center justify-end gap-1.5 sm:gap-2 min-w-0 flex-1 md:flex-initial">
             {/* Active Competition Switcher */}
-            <div className="relative flex items-center bg-card rounded-lg border border-border shadow-sm">
+            <div className="relative flex items-center min-w-0 max-w-full bg-card rounded-lg border border-border shadow-sm">
               <button
                 type="button"
                 onClick={() => setShowEventMenu((prev) => !prev)}
                 title="Switch active competition or manage separate event workspaces"
-                className="flex items-center gap-1.5 pl-2.5 pr-2 py-1.5 text-xs font-medium text-foreground hover:bg-muted/60 rounded-l-lg transition-colors"
+                className="flex items-center gap-1.5 pl-2.5 pr-2 py-1.5 text-xs font-medium text-foreground hover:bg-muted/60 rounded-l-lg transition-colors min-w-0"
               >
                 <Calendar className="w-3.5 h-3.5 text-primary shrink-0" />
-                <span className="max-w-[120px] sm:max-w-[185px] truncate font-semibold">
+                <span className="max-w-[145px] sm:max-w-[185px] truncate font-semibold">
                   {currentEvent?.name || "Select Competition"}
                 </span>
-                <span className="hidden sm:inline-flex items-center rounded-md bg-muted px-1.5 py-0.5 text-[10px] font-bold tabular-nums text-muted-foreground">
+                <span className="hidden sm:inline-flex items-center rounded-md bg-muted px-1.5 py-0.5 text-[10px] font-bold tabular-nums text-muted-foreground shrink-0">
                   {totalAthletesCount}
                 </span>
                 <ChevronDown className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
               </button>
 
-              <div className="h-5 w-px bg-border/80" />
+              <div className="h-5 w-px bg-border/80 shrink-0" />
 
               <button
                 type="button"
@@ -144,7 +144,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   onNewEvent();
                 }}
                 title="Create New Isolated Competition / Event"
-                className="p-1.5 text-muted-foreground hover:text-primary hover:bg-muted/60 rounded-r-lg transition-colors"
+                className="p-1.5 sm:px-2 text-muted-foreground hover:text-primary hover:bg-muted/60 rounded-r-lg transition-colors shrink-0"
               >
                 <Plus className="w-3.5 h-3.5" />
               </button>
@@ -155,7 +155,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                     className="fixed inset-0 z-40"
                     onClick={() => setShowEventMenu(false)}
                   />
-                  <div className="absolute right-0 top-full mt-1.5 w-80 sm:w-96 rounded-xl border border-border bg-card text-foreground shadow-xl z-50 overflow-hidden">
+                  <div className="fixed inset-x-3 top-[60px] sm:inset-x-auto sm:top-full sm:absolute sm:right-0 sm:mt-1.5 sm:w-96 rounded-xl border border-border bg-card text-foreground shadow-xl z-50 overflow-hidden">
                     <div className="px-3.5 py-2.5 border-b border-border bg-muted/40 flex items-center justify-between gap-2">
                       <div>
                         <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
@@ -178,7 +178,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                       </span>
                     </div>
 
-                    <div className="max-h-72 overflow-y-auto divide-y divide-border/60">
+                    <div className="max-h-[58vh] sm:max-h-72 overflow-y-auto thin-scrollbar divide-y divide-border/60">
                       {events.map((ev) => {
                         const isActive = currentEvent?.id === ev.id;
                         const count = isActive ? totalAthletesCount : (ev.athletes_count ?? 0);
@@ -285,7 +285,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               type="button"
               onClick={onOpenRules}
               title="Tournament Rules & Brackets Configuration"
-              className="h-8 px-2.5 bg-card text-foreground hover:bg-muted rounded-lg transition-colors border border-border shadow-sm flex items-center gap-1.5 text-xs font-medium"
+              className="h-8 px-2 sm:px-2.5 bg-card text-foreground hover:bg-muted rounded-lg transition-colors border border-border shadow-sm flex items-center gap-1.5 text-xs font-medium shrink-0"
             >
               <Settings className="w-3.5 h-3.5 text-muted-foreground" />
               <span className="hidden lg:inline">Rules</span>
@@ -296,7 +296,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               type="button"
               onClick={onToggleTheme}
               title={darkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
-              className="h-8 w-8 bg-card flex items-center justify-center text-foreground hover:bg-muted rounded-lg transition-colors border border-border shadow-sm"
+              className="h-8 w-8 bg-card flex items-center justify-center text-foreground hover:bg-muted rounded-lg transition-colors border border-border shadow-sm shrink-0"
             >
               {darkMode ? <Sun className="w-4 h-4 text-warning" /> : <Moon className="w-4 h-4" />}
             </button>
@@ -304,47 +304,59 @@ export const Navbar: React.FC<NavbarProps> = ({
         </div>
 
         {/* Mobile Navigation Tabs */}
-        <nav className="flex md:hidden items-center gap-1.5 py-1.5 border-t border-border/50">
+        <nav className="flex md:hidden items-center gap-1.5 py-2 border-t border-border/50 overflow-x-auto thin-scrollbar">
           <button
             type="button"
             onClick={() => onSelectTab("athletes")}
             title="View, filter, edit, or delete registered athletes"
-            className={`flex-1 flex items-center justify-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs border transition-colors shadow-sm ${
+            className={`flex-1 min-w-0 flex items-center justify-center gap-1 px-2 py-1.5 rounded-lg text-[11px] sm:text-xs border transition-colors shadow-sm whitespace-nowrap ${
               currentTab === "athletes"
                 ? "bg-primary border-primary text-primary-foreground font-semibold"
                 : "bg-card border-border text-foreground hover:bg-muted font-medium"
             }`}
           >
-            <Users className="w-3.5 h-3.5" />
-            <span>Athletes ({totalAthletesCount})</span>
+            <Users className="w-3.5 h-3.5 shrink-0" />
+            <span className="truncate">Athletes</span>
+            <span className="tabular-nums opacity-85 shrink-0">({totalAthletesCount})</span>
           </button>
 
           <button
             type="button"
             onClick={() => onSelectTab("weighin")}
             title="Record official athlete weights and verify eligibility"
-            className={`flex-1 flex items-center justify-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs border transition-colors shadow-sm ${
+            className={`flex-1 min-w-0 flex items-center justify-center gap-1 px-2 py-1.5 rounded-lg text-[11px] sm:text-xs border transition-colors shadow-sm whitespace-nowrap ${
               currentTab === "weighin"
                 ? "bg-primary border-primary text-primary-foreground font-semibold"
                 : "bg-card border-border text-foreground hover:bg-muted font-medium"
             }`}
           >
-            <Scale className="w-3.5 h-3.5" />
-            <span>Weigh-In {pendingWeighInCount > 0 ? `(${pendingWeighInCount})` : ""}</span>
+            <Scale className="w-3.5 h-3.5 shrink-0" />
+            <span className="truncate">Weigh-In</span>
+            {pendingWeighInCount > 0 && (
+              <span
+                className={`px-1 py-0.2 rounded-full text-[10px] font-bold tabular-nums shrink-0 ${
+                  currentTab === "weighin"
+                    ? "bg-primary-foreground/20 text-primary-foreground"
+                    : "bg-warning/15 text-warning"
+                }`}
+              >
+                {pendingWeighInCount}
+              </span>
+            )}
           </button>
 
           <button
             type="button"
             onClick={() => onSelectTab("reports")}
             title="Preview, export, and print categorized competition sheets"
-            className={`flex-1 flex items-center justify-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs border transition-colors shadow-sm ${
+            className={`flex-1 min-w-0 flex items-center justify-center gap-1 px-2 py-1.5 rounded-lg text-[11px] sm:text-xs border transition-colors shadow-sm whitespace-nowrap ${
               currentTab === "reports"
                 ? "bg-primary border-primary text-primary-foreground font-semibold"
                 : "bg-card border-border text-foreground hover:bg-muted font-medium"
             }`}
           >
-            <BarChart3 className="w-3.5 h-3.5" />
-            <span>Reports</span>
+            <BarChart3 className="w-3.5 h-3.5 shrink-0" />
+            <span className="truncate">Reports</span>
           </button>
         </nav>
       </div>

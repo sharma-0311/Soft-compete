@@ -262,14 +262,14 @@ export const ManualEntryModal: React.FC<ManualEntryModalProps> = ({
           }`}
       >
         {/* 1. Drawer Header */}
-        <div className="px-6 pt-5 pb-4 border-b border-border/70 shrink-0">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="font-display text-2xl font-bold tracking-tight text-foreground">
+        <div className="px-4 sm:px-6 pt-4 sm:pt-5 pb-3.5 sm:pb-4 border-b border-border/70 shrink-0">
+          <div className="flex items-start sm:items-center justify-between gap-2">
+            <div className="min-w-0">
+              <h2 className="font-display text-xl sm:text-2xl font-bold tracking-tight text-foreground">
                 Add athlete
               </h2>
               {eventName && (
-                <p className="text-xs text-muted-foreground mt-0.5">
+                <p className="text-xs text-muted-foreground mt-0.5 truncate">
                   Competition: <span className="font-semibold text-primary">{eventName}</span>
                 </p>
               )}
@@ -279,7 +279,7 @@ export const ManualEntryModal: React.FC<ManualEntryModalProps> = ({
               onClick={onClose}
               title="Close Add athlete drawer"
               aria-label="Close drawer"
-              className="inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground px-2 py-1 rounded-md hover:bg-muted transition-colors"
+              className="inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground px-2 py-1 rounded-md hover:bg-muted transition-colors shrink-0"
             >
               <span>Close</span>
               <X className="h-4 w-4" />
@@ -287,12 +287,12 @@ export const ManualEntryModal: React.FC<ManualEntryModalProps> = ({
           </div>
 
           {/* Mode Tabs matching reference design */}
-          <div className="flex items-center gap-2 mt-3.5">
+          <div className="flex items-center gap-2 mt-3.5 overflow-x-auto thin-scrollbar">
             <button
               type="button"
               onClick={() => setActiveTab("single")}
               title="Add one athlete at a time with instant category preview"
-              className={`px-3.5 py-1.5 rounded-lg text-sm font-medium transition-colors ${activeTab === "single"
+              className={`flex-1 sm:flex-initial text-center whitespace-nowrap px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-medium transition-colors ${activeTab === "single"
                 ? "bg-primary text-primary-foreground shadow-sm"
                 : "border border-border bg-card text-foreground hover:bg-muted"
                 }`}
@@ -303,7 +303,7 @@ export const ManualEntryModal: React.FC<ManualEntryModalProps> = ({
               type="button"
               onClick={() => setActiveTab("grid")}
               title="Add multiple athletes together in a structured spreadsheet grid"
-              className={`px-3.5 py-1.5 rounded-lg text-sm font-medium transition-colors ${activeTab === "grid"
+              className={`flex-1 sm:flex-initial text-center whitespace-nowrap px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-medium transition-colors ${activeTab === "grid"
                 ? "bg-primary text-primary-foreground shadow-sm"
                 : "border border-border bg-card text-foreground hover:bg-muted"
                 }`}
@@ -319,7 +319,7 @@ export const ManualEntryModal: React.FC<ManualEntryModalProps> = ({
             onSubmit={(e) => handleSingleSubmit(e, false)}
             className="flex-1 flex flex-col overflow-hidden"
           >
-            <div className="flex-1 overflow-y-auto px-6 py-5 space-y-4">
+            <div className="flex-1 overflow-y-auto thin-scrollbar px-4 sm:px-6 py-4 sm:py-5 space-y-4">
               {/* Saved Toast */}
               {savedToast && (
                 <div className="p-2.5 rounded-lg bg-emerald-500/15 border border-emerald-500/30 text-emerald-700 dark:text-emerald-300 text-xs font-semibold flex items-center gap-2">
@@ -518,12 +518,12 @@ export const ManualEntryModal: React.FC<ManualEntryModalProps> = ({
             </div>
 
             {/* Pinned Drawer Footer */}
-            <div className="px-6 py-4 border-t border-border bg-card flex flex-wrap items-center justify-end gap-2.5 shrink-0">
+            <div className="px-4 sm:px-6 py-3.5 sm:py-4 border-t border-border bg-card grid grid-cols-2 sm:flex sm:flex-wrap sm:items-center sm:justify-end gap-2 shrink-0">
               <button
                 type="button"
                 onClick={onClose}
                 title="Cancel without saving"
-                className="h-10 px-4 rounded-lg border border-border bg-card hover:bg-muted text-sm font-medium text-foreground transition-colors"
+                className="h-10 px-3 sm:px-4 rounded-lg border border-border bg-card hover:bg-muted text-xs sm:text-sm font-medium text-foreground transition-colors"
               >
                 Cancel
               </button>
@@ -531,14 +531,14 @@ export const ManualEntryModal: React.FC<ManualEntryModalProps> = ({
                 type="button"
                 onClick={() => handleSingleSubmit(undefined, true)}
                 title="Save this athlete and reset fields for the next entry"
-                className="h-10 px-4 rounded-lg border border-border bg-card hover:bg-muted text-sm font-medium text-foreground transition-colors"
+                className="h-10 px-3 sm:px-4 rounded-lg border border-border bg-card hover:bg-muted text-xs sm:text-sm font-medium text-foreground transition-colors whitespace-nowrap"
               >
-                Save and add another
+                Save & add another
               </button>
               <button
                 type="submit"
                 title="Save athlete to roster and close drawer"
-                className="h-10 px-5 rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white text-sm font-semibold transition-colors shadow-xs"
+                className="col-span-2 sm:col-span-1 order-first sm:order-last h-10 px-5 rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white text-sm font-semibold transition-colors shadow-xs"
               >
                 Save athlete
               </button>
@@ -550,13 +550,13 @@ export const ManualEntryModal: React.FC<ManualEntryModalProps> = ({
         {activeTab === "grid" && (
           <div className="flex-1 flex flex-col overflow-hidden">
             {/* Grid Toolbar */}
-            <div className="px-6 py-3 bg-muted/40 border-b border-border flex flex-wrap items-center justify-between gap-3 shrink-0">
-              <div className="flex flex-wrap items-center gap-2">
+            <div className="px-4 sm:px-6 py-3 bg-muted/40 border-b border-border flex flex-wrap items-center justify-between gap-2.5 sm:gap-3 shrink-0">
+              <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
                 <button
                   type="button"
                   onClick={() => handleAddGridRows(1)}
                   title="Append 1 empty row"
-                  className="h-8 px-3 rounded-lg border border-border bg-card hover:bg-muted text-xs font-medium text-foreground inline-flex items-center gap-1.5 transition-colors shadow-xs"
+                  className="h-8 px-2.5 sm:px-3 rounded-lg border border-border bg-card hover:bg-muted text-xs font-medium text-foreground inline-flex items-center gap-1.5 transition-colors shadow-xs"
                 >
                   <Plus className="h-3.5 w-3.5" />
                   <span>Add row</span>
@@ -565,7 +565,7 @@ export const ManualEntryModal: React.FC<ManualEntryModalProps> = ({
                   type="button"
                   onClick={() => handleAddGridRows(5)}
                   title="Append 5 empty rows at once"
-                  className="h-8 px-3 rounded-lg border border-border bg-card hover:bg-muted text-xs font-medium text-foreground inline-flex items-center gap-1.5 transition-colors shadow-xs"
+                  className="h-8 px-2.5 sm:px-3 rounded-lg border border-border bg-card hover:bg-muted text-xs font-medium text-foreground inline-flex items-center gap-1.5 transition-colors shadow-xs"
                 >
                   <Plus className="h-3.5 w-3.5" />
                   <span>Add 5 rows</span>
@@ -574,31 +574,31 @@ export const ManualEntryModal: React.FC<ManualEntryModalProps> = ({
                   type="button"
                   onClick={handlePasteClipboard}
                   title="Paste copied Excel/TSV rows (Name, DOB, Gender, Weight, Height, Club)"
-                  className="h-8 px-3 rounded-lg border border-border bg-card hover:bg-muted text-xs font-medium text-foreground inline-flex items-center gap-1.5 transition-colors shadow-xs"
+                  className="h-8 px-2.5 sm:px-3 rounded-lg border border-border bg-card hover:bg-muted text-xs font-medium text-foreground inline-flex items-center gap-1.5 transition-colors shadow-xs"
                 >
                   <Clipboard className="h-3.5 w-3.5" />
-                  <span>Paste from Excel</span>
+                  <span>Paste Excel</span>
                 </button>
                 <button
                   type="button"
                   onClick={handleClearGrid}
                   title="Reset grid back to blank rows"
-                  className="h-8 px-3 rounded-lg text-xs font-medium text-muted-foreground hover:text-destructive hover:bg-muted inline-flex items-center gap-1.5 transition-colors"
+                  className="h-8 px-2.5 sm:px-3 rounded-lg text-xs font-medium text-muted-foreground hover:text-destructive hover:bg-muted inline-flex items-center gap-1.5 transition-colors"
                 >
                   <Trash2 className="h-3.5 w-3.5" />
                   <span>Reset</span>
                 </button>
               </div>
 
-              <span className="text-xs text-muted-foreground">
+              <span className="text-[11px] sm:text-xs text-muted-foreground">
                 Weight is optional — if omitted, category is assigned by Height. DOB auto-inserts{" "}
                 <code className="px-1 py-0.5 rounded bg-muted font-mono">/</code>.
               </span>
             </div>
 
             {/* Grid Table with Crisp Gridlines & Generous Cell Padding */}
-            <div className="flex-1 overflow-auto p-6">
-              <div className="rounded-xl border border-border overflow-x-auto shadow-xs bg-card">
+            <div className="flex-1 overflow-auto thin-scrollbar p-3 sm:p-6">
+              <div className="rounded-xl border border-border overflow-x-auto thin-scrollbar shadow-xs bg-card">
                 <table className="w-full text-sm border-collapse">
                   <thead>
                     <tr className="bg-muted/70 border-b border-border text-xs font-semibold uppercase tracking-wider text-muted-foreground">
@@ -783,7 +783,7 @@ export const ManualEntryModal: React.FC<ManualEntryModalProps> = ({
             </div>
 
             {/* Grid Footer */}
-            <div className="px-6 py-4 border-t border-border bg-card flex flex-wrap items-center justify-between gap-3 shrink-0">
+            <div className="px-4 sm:px-6 py-3.5 sm:py-4 border-t border-border bg-card flex flex-wrap items-center justify-between gap-2.5 sm:gap-3 shrink-0">
               <div className="text-sm text-muted-foreground">
                 <span className="font-semibold text-foreground tabular-nums">{validGridCount}</span>{" "}
                 athlete{validGridCount === 1 ? "" : "s"} ready to save

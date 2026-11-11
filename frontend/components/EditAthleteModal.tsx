@@ -105,7 +105,7 @@ export const EditAthleteModal: React.FC<EditAthleteModalProps> = ({
         </div>
 
         {/* Form Body with 2 Columns */}
-        <div className="p-4 sm:p-5 overflow-y-auto">
+        <div className="p-4 sm:p-5 overflow-y-auto thin-scrollbar">
           <div className="grid gap-4 md:grid-cols-[1fr_260px]">
             {/* Left Column: Form Fields */}
             <form onSubmit={handleSubmit} className="grid gap-3">
@@ -133,11 +133,10 @@ export const EditAthleteModal: React.FC<EditAthleteModalProps> = ({
                     type="button"
                     onClick={() => setGender("M")}
                     title="Select Male / Boy division"
-                    className={`flex items-center justify-center gap-2 py-2 px-3 rounded-md border-2 font-display text-sm font-bold uppercase transition-all ${
-                      gender === "M"
+                    className={`flex items-center justify-center gap-2 py-2 px-3 rounded-md border-2 font-display text-sm font-bold uppercase transition-all ${gender === "M"
                         ? "border-male bg-male/15 text-male shadow-xs"
                         : "border-border text-muted-foreground hover:border-border/80 hover:text-foreground"
-                    }`}
+                      }`}
                   >
                     <span>Male / Boy</span>
                   </button>
@@ -145,11 +144,10 @@ export const EditAthleteModal: React.FC<EditAthleteModalProps> = ({
                     type="button"
                     onClick={() => setGender("F")}
                     title="Select Female / Girl division"
-                    className={`flex items-center justify-center gap-2 py-2 px-3 rounded-md border-2 font-display text-sm font-bold uppercase transition-all ${
-                      gender === "F"
+                    className={`flex items-center justify-center gap-2 py-2 px-3 rounded-md border-2 font-display text-sm font-bold uppercase transition-all ${gender === "F"
                         ? "border-female bg-female/15 text-female shadow-xs"
                         : "border-border text-muted-foreground hover:border-border/80 hover:text-foreground"
-                    }`}
+                      }`}
                   >
                     <span>Female / Girl</span>
                   </button>
@@ -157,7 +155,7 @@ export const EditAthleteModal: React.FC<EditAthleteModalProps> = ({
               </div>
 
               {/* DOB & Club */}
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="grid gap-1">
                   <label className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
                     DOB
@@ -179,7 +177,7 @@ export const EditAthleteModal: React.FC<EditAthleteModalProps> = ({
               </div>
 
               {/* Weight & Height */}
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="grid gap-1">
                   <label className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
                     Weight (kg) <span className="opacity-70">(optional)</span>

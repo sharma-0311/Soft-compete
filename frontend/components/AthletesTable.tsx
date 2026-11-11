@@ -56,6 +56,37 @@ function getVisiblePages(current: number, total: number): (number | "dots")[] {
   return out;
 }
 
+function AssignedCategorySummary({
+  target,
+  highlight = false,
+  compact = false,
+}: {
+  target: Pick<CategorizedAthlete, "age_group" | "weight_class" | "weight_kg" | "height_category">;
+  highlight?: boolean;
+  compact?: boolean;
+}) {
+  const byHeightOnly = !target.weight_kg && Boolean(target.height_category);
+  return (
+    <div className={`flex flex-wrap items-center ${compact ? "gap-2" : "gap-2.5"}`}>
+      <DivisionBadge group={target.age_group} />
+      <span className={`font-semibold ${highlight ? "text-primary text-xs" : "text-foreground"}`}>
+        {target.weight_class}
+      </span>
+      {target.height_category && target.weight_kg && (
+        <span className="text-muted-foreground text-xs">· {target.height_category}</span>
+      )}
+      {byHeightOnly && (
+        <span
+          title="Assigned from height bracket because weight was not provided"
+          className="rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground"
+        >
+          Ht
+        </span>
+      )}
+    </div>
+  );
+}
+
 export const AthletesTable: React.FC<AthletesTableProps> = ({
   athletes,
   filterAge,
@@ -261,11 +292,11 @@ export const AthletesTable: React.FC<AthletesTableProps> = ({
   };
 
   return (
-    <div className="rounded-xl border border-border bg-card shadow-sm print:hidden">
+    <div className="rounded-xl border border-border bg-card shadow-sm print:hidden overflow-hidden">
       {/* 1. Header Toolbar: Distinct Division Filter Pills, Search, Filters, Delete & Export */}
-      <div className="flex flex-wrap items-center gap-2.5 border-b border-border bg-card p-3.5">
-        {/* Division Filter Segmented Pills */}
-        <div className="inline-flex flex-wrap items-center gap-1 rounded-lg border border-border bg-muted/60 p-1">
+      <div className="flex flex-col lg:flex-row lg:flex-wrap lg:items-center gap-2.5 border-b border-border bg-card p-3 sm:p-3.5">
+        {/* Division Filter Segmented Pills (Horizontally scrollable on narrow phones) */}
+        <div className="flex items-center gap-1 overflow-x-auto thin-scrollbar rounded-lg border border-border bg-muted/60 p-1 w-full lg:w-auto">
           {DIVISIONS.map((div) => {
             const isActive = filterAge === div;
             const count = divisionCounts[div] ?? 0;
@@ -278,7 +309,7 @@ export const AthletesTable: React.FC<AthletesTableProps> = ({
                   setCurrentPage(0);
                 }}
                 title={`Filter roster to ${div === "Sub-Jr" ? "Sub-Junior" : div} athletes (${count})`}
-                className={`h-7 rounded-md px-2.5 text-xs font-semibold transition-all flex items-center gap-1.5 border ${
+                className={`h-7 shrink-0 rounded-md px-2.5 text-xs font-semibold transition-all flex items-center gap-1.5 border whitespace-nowrap ${
                   isActive
                     ? "bg-primary border-primary text-primary-foreground shadow-sm"
                     : "bg-card border-border/70 text-foreground/80 hover:text-foreground hover:bg-background shadow-sm"
@@ -300,9 +331,9 @@ export const AthletesTable: React.FC<AthletesTableProps> = ({
         </div>
 
         {/* Right Controls: Search + Filters + Conditional Delete + Export */}
-        <div className="flex flex-wrap items-center gap-2 ml-auto w-full lg:w-auto justify-end">
+        <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-2 w-full lg:w-auto lg:ml-auto lg:justify-end">
           {/* Search Input */}
-          <div className="relative flex-1 sm:flex-initial sm:w-64">
+          <div className="relative w-full sm:w-60 lg:w-64">
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
             <input
               type="text"
@@ -328,69 +359,72 @@ export const AthletesTable: React.FC<AthletesTableProps> = ({
             )}
           </div>
 
-          {/* Expandable Filters Toggle Button */}
-          <button
-            type="button"
-            onClick={() => setShowFilters((v) => !v)}
-            title="Filter athletes by gender or assigned category mode"
-            className={`h-9 px-3 rounded-lg border text-xs font-semibold inline-flex items-center gap-1.5 transition-colors shadow-sm ${
-              showFilters || activeExtraFilters > 0
-                ? "border-primary/60 bg-primary/10 text-primary"
-                : "border-border bg-secondary hover:bg-muted text-foreground"
-            }`}
-          >
-            <Filter className="h-3.5 w-3.5" />
-            <span>Filters</span>
-            {activeExtraFilters > 0 && (
-              <span className="rounded-full bg-primary text-primary-foreground px-1.5 py-0.2 text-[10px] font-bold">
-                {activeExtraFilters}
-              </span>
-            )}
-            <ChevronDown className={`h-3.5 w-3.5 transition-transform ${showFilters ? "rotate-180" : ""}`} />
-          </button>
+          <div className="grid grid-cols-3 sm:flex items-center gap-2">
+            {/* Expandable Filters Toggle Button */}
+            <button
+              type="button"
+              onClick={() => setShowFilters((v) => !v)}
+              title="Filter athletes by gender or assigned category mode"
+              className={`h-9 px-2.5 sm:px-3 rounded-lg border text-xs font-semibold inline-flex items-center justify-center gap-1.5 transition-colors shadow-sm whitespace-nowrap ${
+                showFilters || activeExtraFilters > 0
+                  ? "border-primary/60 bg-primary/10 text-primary"
+                  : "border-border bg-secondary hover:bg-muted text-foreground"
+              }`}
+            >
+              <Filter className="h-3.5 w-3.5 shrink-0" />
+              <span>Filters</span>
+              {activeExtraFilters > 0 && (
+                <span className="rounded-full bg-primary text-primary-foreground px-1.5 py-0.2 text-[10px] font-bold">
+                  {activeExtraFilters}
+                </span>
+              )}
+              <ChevronDown className={`h-3.5 w-3.5 shrink-0 transition-transform ${showFilters ? "rotate-180" : ""}`} />
+            </button>
 
-          {/* Always-Visible Bulk Delete Button (Active when >=1 row selected, disabled otherwise) */}
-          <button
-            type="button"
-            disabled={selectedKeys.size === 0}
-            onClick={() => {
-              onDeleteSelected(Array.from(selectedKeys));
-              setSelectedKeys(new Set());
-            }}
-            title={
-              selectedKeys.size > 0
-                ? `Delete ${selectedKeys.size} selected athlete${selectedKeys.size === 1 ? "" : "s"}`
-                : "Select one or more rows using the checkboxes to enable Delete"
-            }
-            className={`h-9 px-3 rounded-lg text-xs font-semibold inline-flex items-center gap-1.5 transition-all border ${
-              selectedKeys.size > 0
-                ? "bg-destructive border-destructive text-destructive-foreground hover:bg-destructive/90 shadow-sm"
-                : "border-border bg-secondary/70 text-muted-foreground opacity-65 cursor-not-allowed"
-            }`}
-          >
-            <Trash2 className="h-3.5 w-3.5" />
-            <span>Delete{selectedKeys.size > 0 ? ` (${selectedKeys.size})` : ""}</span>
-          </button>
+            {/* Always-Visible Bulk Delete Button (Active when >=1 row selected, disabled otherwise) */}
+            <button
+              type="button"
+              disabled={selectedKeys.size === 0}
+              onClick={() => {
+                onDeleteSelected(Array.from(selectedKeys));
+                setSelectedKeys(new Set());
+              }}
+              title={
+                selectedKeys.size > 0
+                  ? `Delete ${selectedKeys.size} selected athlete${selectedKeys.size === 1 ? "" : "s"}`
+                  : "Select one or more rows using the checkboxes to enable Delete"
+              }
+              className={`h-9 px-2.5 sm:px-3 rounded-lg text-xs font-semibold inline-flex items-center justify-center gap-1.5 transition-all border whitespace-nowrap ${
+                selectedKeys.size > 0
+                  ? "bg-destructive border-destructive text-destructive-foreground hover:bg-destructive/90 shadow-sm"
+                  : "border-border bg-secondary/70 text-muted-foreground opacity-65 cursor-not-allowed"
+              }`}
+            >
+              <Trash2 className="h-3.5 w-3.5 shrink-0" />
+              <span>Delete{selectedKeys.size > 0 ? ` (${selectedKeys.size})` : ""}</span>
+            </button>
 
-          {/* Export Quick Action */}
-          <button
-            type="button"
-            disabled={athletes.length === 0}
-            onClick={onExportExcel}
-            title={athletes.length ? "Export categorized multi-sheet Excel (.xlsx)" : "Add athletes first to export Excel"}
-            className="h-9 px-3 rounded-lg border border-border bg-secondary hover:bg-muted text-xs font-semibold text-foreground inline-flex items-center gap-1.5 transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <FileSpreadsheet className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
-            <span className="hidden sm:inline">Export Excel</span>
-          </button>
+            {/* Export Quick Action */}
+            <button
+              type="button"
+              disabled={athletes.length === 0}
+              onClick={onExportExcel}
+              title={athletes.length ? "Export categorized multi-sheet Excel (.xlsx)" : "Add athletes first to export Excel"}
+              className="h-9 px-2.5 sm:px-3 rounded-lg border border-border bg-secondary hover:bg-muted text-xs font-semibold text-foreground inline-flex items-center justify-center gap-1.5 transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+            >
+              <FileSpreadsheet className="h-3.5 w-3.5 shrink-0 text-emerald-600 dark:text-emerald-400" />
+              <span className="sm:hidden">Export</span>
+              <span className="hidden sm:inline">Export Excel</span>
+            </button>
+          </div>
         </div>
       </div>
 
       {/* Expandable Filter Controls Strip */}
       {showFilters && (
-        <div className="flex flex-wrap items-center gap-5 border-b border-border bg-muted/25 px-4 py-3.5 text-xs">
-          <div className="flex items-center gap-2">
-            <span className="font-semibold text-muted-foreground uppercase tracking-wider text-[11px]">
+        <div className="flex flex-col sm:flex-row sm:flex-wrap items-start sm:items-center gap-3 sm:gap-5 border-b border-border bg-muted/25 px-3.5 sm:px-4 py-3 text-xs">
+          <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 w-full sm:w-auto">
+            <span className="font-semibold text-muted-foreground uppercase tracking-wider text-[11px] mr-1">
               Gender:
             </span>
             {(["All", "M", "F"] as const).map((g) => (
@@ -413,8 +447,8 @@ export const AthletesTable: React.FC<AthletesTableProps> = ({
             ))}
           </div>
 
-          <div className="flex items-center gap-1.5">
-            <span className="font-semibold text-muted-foreground uppercase tracking-wider text-[11px]">
+          <div className="flex flex-wrap items-center gap-1.5 w-full sm:w-auto">
+            <span className="font-semibold text-muted-foreground uppercase tracking-wider text-[11px] mr-1">
               Assigned Category:
             </span>
             {(
@@ -453,7 +487,7 @@ export const AthletesTable: React.FC<AthletesTableProps> = ({
                 setCurrentPage(0);
               }}
               title="Reset gender and assigned category filters"
-              className="ml-auto text-xs font-semibold text-primary hover:underline"
+              className="sm:ml-auto text-xs font-semibold text-primary hover:underline"
             >
               Reset filters
             </button>
@@ -461,9 +495,301 @@ export const AthletesTable: React.FC<AthletesTableProps> = ({
         </div>
       )}
 
-      {/* 2. Roster Table (Supports Direct In-Cell Inline Editing) */}
-      <div className="overflow-x-auto">
-        <table className="w-full text-sm">
+      {/* 2A. MOBILE CARD VIEW (< 768px): Zero horizontal squeeze, crisp alignment & inline editing */}
+      <div className="md:hidden">
+        {/* Mobile Select-All & Sort Bar */}
+        <div className="flex flex-wrap items-center justify-between gap-2 px-3 py-2.5 border-b border-border bg-muted/60 text-xs">
+          <button
+            type="button"
+            onClick={handleToggleSelectAll}
+            title={
+              selectedKeys.size > 0 && selectedKeys.size === paginatedAthletes.length
+                ? "Deselect all athletes on this page"
+                : "Select all athletes on this page"
+            }
+            className="inline-flex items-center gap-2 font-semibold text-foreground"
+          >
+            {selectedKeys.size > 0 && selectedKeys.size === paginatedAthletes.length ? (
+              <CheckSquare className="h-4 w-4 text-primary" />
+            ) : (
+              <Square className="h-4 w-4 text-muted-foreground" />
+            )}
+            <span>Select page ({paginatedAthletes.length})</span>
+          </button>
+
+          <div className="flex items-center gap-1.5">
+            <span className="text-muted-foreground text-[11px] font-medium">Sort:</span>
+            <select
+              title="Sort mobile athlete list"
+              value={sortConfig.key}
+              onChange={(e) => setSortConfig({ key: e.target.value, dir: 1 })}
+              className="h-7 rounded-md border border-input bg-background px-2 text-xs font-medium text-foreground focus:outline-none"
+            >
+              {TABLE_COLUMNS.map((col) => (
+                <option key={col.key} value={col.key}>
+                  {col.label}
+                </option>
+              ))}
+            </select>
+            <button
+              type="button"
+              onClick={() => setSortConfig((prev) => ({ ...prev, dir: -prev.dir }))}
+              title={`Toggle sort order (${sortConfig.dir === 1 ? "Ascending" : "Descending"})`}
+              aria-label="Toggle sort direction"
+              className="h-7 w-7 inline-flex items-center justify-center rounded-md border border-input bg-background text-foreground hover:bg-muted"
+            >
+              {sortConfig.dir === 1 ? (
+                <ArrowUp className="h-3.5 w-3.5 text-primary" />
+              ) : (
+                <ArrowDown className="h-3.5 w-3.5 text-primary" />
+              )}
+            </button>
+          </div>
+        </div>
+
+        {/* Mobile Cards List */}
+        <div className="divide-y divide-border/70">
+          {paginatedAthletes.map((a, idx) => {
+            const rowKey = a.id ?? a.sr_no ?? a.name ?? idx;
+            const isChecked = selectedKeys.has(rowKey);
+            const isEditing = editingKey === rowKey;
+            const hasNotes = a.notes && a.notes.length > 0;
+            const target = isEditing && inlinePreview ? inlinePreview : a;
+
+            return (
+              <div
+                key={`mob-${rowKey}`}
+                className={`p-3.5 space-y-2.5 transition-colors ${
+                  isEditing
+                    ? "bg-primary/5 ring-1 ring-inset ring-primary/30"
+                    : isChecked
+                    ? "bg-accent/40"
+                    : "bg-card"
+                }`}
+              >
+                {isEditing ? (
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-[11px] font-bold uppercase tracking-wider text-primary">
+                        Editing Athlete #{a.sr_no || validPage * pageSize + idx + 1}
+                      </span>
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => saveInlineEdit(a)}
+                          title="Save inline edits"
+                          className="h-8 px-3 rounded-md bg-emerald-600 text-white hover:bg-emerald-700 text-xs font-semibold inline-flex items-center gap-1"
+                        >
+                          <Check className="h-3.5 w-3.5" />
+                          <span>Save</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={cancelInlineEdit}
+                          title="Cancel inline editing"
+                          className="h-8 px-2.5 rounded-md border border-border bg-card text-foreground hover:bg-muted text-xs font-medium inline-flex items-center gap-1"
+                        >
+                          <X className="h-3.5 w-3.5" />
+                          <span>Cancel</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-2.5">
+                      <input
+                        type="text"
+                        autoFocus
+                        value={editDraft.name}
+                        onChange={(e) => setEditDraft({ ...editDraft, name: e.target.value })}
+                        onKeyDown={(e) => handleInlineKeyDown(e, a)}
+                        placeholder="Full name"
+                        title="Edit athlete name"
+                        className="h-9 w-full rounded-md border border-primary/50 bg-background px-2.5 text-sm font-medium text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                      />
+
+                      <div className="grid grid-cols-[80px_1fr] gap-2">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setEditDraft({ ...editDraft, gender: editDraft.gender === "M" ? "F" : "M" })
+                          }
+                          title="Click to toggle Male (M) / Female (F)"
+                          className={`h-9 rounded-md border border-input text-xs font-bold transition-colors ${
+                            editDraft.gender === "M"
+                              ? "bg-blue-500/15 text-male border-blue-500/30"
+                              : "bg-pink-500/15 text-female border-pink-500/30"
+                          }`}
+                        >
+                          {editDraft.gender === "M" ? "Male (M)" : "Female (F)"}
+                        </button>
+
+                        <DobInput
+                          compact
+                          value={editDraft.dob}
+                          onChange={(val) => setEditDraft({ ...editDraft, dob: val })}
+                          onKeyDown={(e) => handleInlineKeyDown(e, a)}
+                          className="w-full"
+                          title="Type DOB (auto '/') or use calendar button"
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2">
+                        <input
+                          type="number"
+                          step="0.1"
+                          min="0"
+                          max="250"
+                          value={editDraft.weight}
+                          onChange={(e) => setEditDraft({ ...editDraft, weight: e.target.value })}
+                          onKeyDown={(e) => handleInlineKeyDown(e, a)}
+                          placeholder="Weight kg (opt)"
+                          title="Edit weight in kg (optional — leave empty to categorize by height)"
+                          className="h-9 w-full rounded-md border border-input bg-background px-2.5 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                        />
+                        <input
+                          type="number"
+                          step="0.1"
+                          min="30"
+                          max="260"
+                          value={editDraft.height}
+                          onChange={(e) => setEditDraft({ ...editDraft, height: e.target.value })}
+                          onKeyDown={(e) => handleInlineKeyDown(e, a)}
+                          placeholder="Height cm"
+                          title="Edit height in cm"
+                          className="h-9 w-full rounded-md border border-input bg-background px-2.5 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                        />
+                      </div>
+
+                      <input
+                        type="text"
+                        value={editDraft.club}
+                        onChange={(e) => setEditDraft({ ...editDraft, club: e.target.value })}
+                        onKeyDown={(e) => handleInlineKeyDown(e, a)}
+                        placeholder="Club / Academy"
+                        title="Edit club / school name"
+                        className="h-9 w-full rounded-md border border-input bg-background px-2.5 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                      />
+                    </div>
+
+                    <div className="rounded-lg border border-border/80 bg-card px-2.5 py-2 flex flex-wrap items-center gap-2 text-xs">
+                      <span className="text-[11px] font-semibold text-muted-foreground">Live Category:</span>
+                      <AssignedCategorySummary target={target} highlight compact />
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    {/* Top Row: Select + Sr + Name + Gender + Action Buttons */}
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex items-start gap-2.5 min-w-0">
+                        <button
+                          type="button"
+                          onClick={() => handleToggleRow(rowKey)}
+                          title={isChecked ? `Deselect ${a.name}` : `Select ${a.name} for bulk actions`}
+                          aria-label={`Select ${a.name}`}
+                          className="mt-0.5 text-muted-foreground hover:text-foreground shrink-0"
+                        >
+                          {isChecked ? (
+                            <CheckSquare className="h-4 w-4 text-primary" />
+                          ) : (
+                            <Square className="h-4 w-4" />
+                          )}
+                        </button>
+
+                        <div className="min-w-0">
+                          <div className="flex flex-wrap items-center gap-1.5">
+                            <span className="text-xs font-mono text-muted-foreground tabular-nums">
+                              #{a.sr_no || validPage * pageSize + idx + 1}
+                            </span>
+                            <span className="font-semibold text-sm text-foreground break-words">
+                              {a.name}
+                            </span>
+                            <span
+                              className={`inline-flex h-5 w-5 items-center justify-center rounded text-[11px] font-bold shrink-0 ${
+                                a.gender === "M"
+                                  ? "bg-blue-50 text-blue-600 dark:bg-male/20 dark:text-male"
+                                  : "bg-pink-50 text-pink-600 dark:bg-female/20 dark:text-female"
+                              }`}
+                            >
+                              {a.gender}
+                            </span>
+                            {hasNotes && (
+                              <span
+                                title={a.notes.join("; ")}
+                                className="inline-flex items-center text-warning"
+                              >
+                                <AlertTriangle className="h-3.5 w-3.5" />
+                              </span>
+                            )}
+                          </div>
+
+                          <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-muted-foreground">
+                            <span className="tabular-nums">
+                              Age <b className="text-foreground">{a.competition_age ?? a.calculated_age ?? "—"}</b>
+                              {a.dob ? ` (${a.dob})` : ""}
+                            </span>
+                            <span>•</span>
+                            <span className="tabular-nums font-medium text-foreground">
+                              {a.weight_kg ? `${a.weight_kg} kg` : "No wt"}
+                            </span>
+                            {a.height_cm && (
+                              <>
+                                <span>•</span>
+                                <span className="tabular-nums">{a.height_cm} cm</span>
+                              </>
+                            )}
+                            {a.club && (
+                              <>
+                                <span>•</span>
+                                <span className="truncate max-w-[160px]">{a.club}</span>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="inline-flex items-center gap-0.5 shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => startInlineEdit(a, rowKey)}
+                          title={`Edit ${a.name} inline`}
+                          aria-label={`Edit ${a.name}`}
+                          className="p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-colors"
+                        >
+                          <Pencil className="h-3.5 w-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => onDeleteAthlete(rowKey)}
+                          title={`Delete ${a.name} from roster`}
+                          aria-label={`Delete ${a.name}`}
+                          className="p-2 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-md transition-colors"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Assigned Category Pill Row */}
+                    <div className="pl-6 text-xs">
+                      <AssignedCategorySummary target={target} compact />
+                    </div>
+                  </>
+                )}
+              </div>
+            );
+          })}
+
+          {paginatedAthletes.length === 0 && (
+            <div className="px-4 py-14 text-center text-sm text-muted-foreground">
+              No athletes found matching the active selection.
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* 2B. DESKTOP & TABLET ROSTER TABLE (>= 768px, Smooth Thin Horizontal Scrollbar) */}
+      <div className="hidden md:block overflow-x-auto thin-scrollbar">
+        <table className="w-full min-w-[880px] text-sm">
           <thead>
             <tr className="border-b border-border text-left text-[11px] uppercase tracking-wider font-bold text-muted-foreground bg-muted/75">
               <th className="w-10 px-4 py-3">
@@ -683,35 +1009,10 @@ export const AthletesTable: React.FC<AthletesTableProps> = ({
 
                   {/* 7. Assigned Category (Live-updating preview while Editing!) */}
                   <td className="whitespace-nowrap px-4 py-3">
-                    {(() => {
-                      const target = isEditing && inlinePreview ? inlinePreview : a;
-                      const byHeightOnly = !target.weight_kg && Boolean(target.height_category);
-                      return (
-                        <div className="flex items-center gap-2.5">
-                          <DivisionBadge group={target.age_group} />
-                          <span
-                            className={`font-semibold ${
-                              isEditing && inlinePreview ? "text-primary text-xs" : "text-foreground"
-                            }`}
-                          >
-                            {target.weight_class}
-                          </span>
-                          {target.height_category && target.weight_kg && (
-                            <span className="text-muted-foreground text-xs">
-                              · {target.height_category}
-                            </span>
-                          )}
-                          {byHeightOnly && (
-                            <span
-                              title="Assigned from height bracket because weight was not provided"
-                              className="rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground"
-                            >
-                              Ht
-                            </span>
-                          )}
-                        </div>
-                      );
-                    })()}
+                    <AssignedCategorySummary
+                      target={isEditing && inlinePreview ? inlinePreview : a}
+                      highlight={Boolean(isEditing && inlinePreview)}
+                    />
                   </td>
 
                   {/* 8. Club (Inline Input when Editing) */}
@@ -793,8 +1094,8 @@ export const AthletesTable: React.FC<AthletesTableProps> = ({
       </div>
 
       {/* 3. Pagination Footer */}
-      <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3.5 text-xs text-muted-foreground border-t border-border">
-        <span className="tabular-nums">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-3.5 sm:px-4 py-3.5 text-xs text-muted-foreground border-t border-border">
+        <span className="tabular-nums text-center sm:text-left">
           {filteredAthletes.length > 0
             ? `Showing ${validPage * pageSize + 1}–${Math.min(
                 filteredAthletes.length,
@@ -803,12 +1104,12 @@ export const AthletesTable: React.FC<AthletesTableProps> = ({
             : "Showing 0 of 0 athletes"}
         </span>
 
-        <div className="flex items-center gap-3 ml-auto">
+        <div className="flex flex-wrap items-center justify-between sm:justify-end gap-2.5 sm:gap-3 w-full sm:w-auto">
           <div className="flex items-center gap-2">
-            <span>Rows per page:</span>
+            <span>Rows:</span>
             <select
               title="Select number of athletes shown per page"
-              className="rounded-md border border-input bg-background px-2 py-1 text-foreground focus:outline-none"
+              className="h-7 rounded-md border border-input bg-background px-2 text-foreground focus:outline-none"
               value={pageSize}
               onChange={(e) => {
                 setPageSize(Number(e.target.value));
@@ -823,7 +1124,7 @@ export const AthletesTable: React.FC<AthletesTableProps> = ({
             </select>
           </div>
 
-          <div className="flex items-center gap-1">
+          <div className="flex flex-wrap items-center justify-center gap-1">
             <button
               type="button"
               disabled={validPage === 0}

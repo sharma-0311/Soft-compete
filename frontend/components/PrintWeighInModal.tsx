@@ -46,8 +46,8 @@ export const PrintWeighInModal: React.FC<PrintWeighInModalProps> = ({
       >
         {/* Header toolbar (Hidden during print) */}
         <div className="p-4 sm:p-5 border-b border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between gap-3 bg-slate-50 dark:bg-slate-950 no-print">
-          <div>
-            <h3 className="text-lg font-bold">
+          <div className="min-w-0">
+            <h3 className="text-base sm:text-lg font-bold">
               Official Weigh-In & Verification Roster
             </h3>
             <p className="text-xs text-slate-500 dark:text-slate-400">
@@ -55,13 +55,13 @@ export const PrintWeighInModal: React.FC<PrintWeighInModalProps> = ({
             </p>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto justify-end">
             {/* Division Filter */}
             <select
               aria-label="Filter Print Sheet by Division"
               value={filterDivision}
               onChange={(e) => setFilterDivision(e.target.value)}
-              className="px-2.5 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-bold"
+              className="flex-1 sm:flex-initial px-2.5 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-bold"
             >
               <option value="All">All Divisions ({athletes.length})</option>
               <option value="Sub-Jr">Sub-Junior</option>
@@ -71,15 +71,17 @@ export const PrintWeighInModal: React.FC<PrintWeighInModalProps> = ({
             </select>
 
             <button
+              type="button"
               onClick={handlePrint}
               title="Open system print dialog or save weigh-in sheet as PDF"
-              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs sm:text-sm font-bold shadow-md shadow-blue-600/20 transition-all flex items-center gap-1.5"
+              className="px-3 sm:px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs sm:text-sm font-bold shadow-md shadow-blue-600/20 transition-all flex items-center gap-1.5 whitespace-nowrap"
             >
-              <Printer className="w-4 h-4" />
+              <Printer className="w-4 h-4 shrink-0" />
               <span>Print Sheet / Save PDF</span>
             </button>
 
             <button
+              type="button"
               onClick={onClose}
               title="Close print preview modal"
               className="p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors"
@@ -90,23 +92,23 @@ export const PrintWeighInModal: React.FC<PrintWeighInModalProps> = ({
         </div>
 
         {/* Printable Paper Canvas */}
-        <div className="flex-1 overflow-y-auto p-4 sm:p-8 bg-slate-100 dark:bg-slate-950/60">
+        <div className="flex-1 overflow-y-auto thin-scrollbar p-3 sm:p-8 bg-slate-100 dark:bg-slate-950/60">
           <div
             ref={printRef}
-            className="bg-white max-w-4xl mx-auto p-6 sm:p-8 rounded-xl shadow border border-slate-200 text-slate-900 print:shadow-none print:border-none print:p-0 print:m-0 space-y-6"
+            className="bg-white max-w-4xl mx-auto p-4 sm:p-8 rounded-xl shadow border border-slate-200 text-slate-900 print:shadow-none print:border-none print:p-0 print:m-0 space-y-5 sm:space-y-6"
           >
             {/* Header / Federation Banner */}
             <div className="text-center pb-4 border-b-2 border-slate-900 space-y-1">
               <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500">
                 Soft Compete • Official Weigh-In Sheet
               </div>
-              <h1 className="text-xl sm:text-2xl font-black uppercase tracking-wider text-slate-900">
+              <h1 className="text-lg sm:text-2xl font-black uppercase tracking-wider text-slate-900">
                 {eventTitle || "STATE TAEKWONDO CHAMPIONSHIP 2026"}
               </h1>
               <p className="text-xs font-bold uppercase tracking-widest text-slate-700">
                 Official Athlete Weigh-In & Category Verification Roster
               </p>
-              <div className="text-[11px] text-slate-600 pt-1 flex flex-wrap items-center justify-center gap-x-6 gap-y-1">
+              <div className="text-[11px] text-slate-600 pt-1 flex flex-wrap items-center justify-center gap-x-4 sm:gap-x-6 gap-y-1">
                 <span>Division: <b>{filterDivision === "All" ? "All Competition Categories" : filterDivision}</b></span>
                 <span>Total Athletes: <b>{filteredAthletes.length}</b></span>
                 <span>Date: <b>{eventDate || "2026-10-24"}</b></span>
@@ -116,8 +118,9 @@ export const PrintWeighInModal: React.FC<PrintWeighInModalProps> = ({
               </div>
             </div>
 
-            {/* Verification Table */}
-            <table className="w-full text-left text-xs border border-slate-400 border-collapse">
+            {/* Verification Table (Horizontally scrollable on narrow phones, full-width in print) */}
+            <div className="overflow-x-auto thin-scrollbar print:overflow-visible">
+              <table className="w-full min-w-[680px] text-left text-xs border border-slate-400 border-collapse">
               <thead>
                 <tr className="bg-slate-100 font-bold border-b border-slate-400 text-[11px]">
                   <th className="p-2 border-r border-slate-400 w-8 text-center">#</th>
@@ -159,9 +162,10 @@ export const PrintWeighInModal: React.FC<PrintWeighInModalProps> = ({
                 ))}
               </tbody>
             </table>
+            </div>
 
             {/* Signatures */}
-            <div className="pt-8 grid grid-cols-3 gap-6 text-center text-xs text-slate-800">
+            <div className="pt-8 grid grid-cols-1 sm:grid-cols-3 print:grid-cols-3 gap-6 text-center text-xs text-slate-800">
               <div>
                 <div className="border-b border-slate-500 w-36 mx-auto mb-1" />
                 <span className="font-bold">Tournament Director</span>

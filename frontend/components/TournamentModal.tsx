@@ -112,17 +112,17 @@ export const TournamentModal: React.FC<TournamentModalProps> = ({
         className="bg-card text-card-foreground h-full w-full max-w-[490px] shadow-2xl border-l border-border flex flex-col transition-all duration-200"
       >
         {/* 1. Drawer Header & Step Tabs */}
-        <div className="px-6 pt-5 pb-4 border-b border-border/70 shrink-0">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2.5">
+        <div className="px-4 sm:px-6 pt-4 sm:pt-5 pb-3.5 sm:pb-4 border-b border-border/70 shrink-0">
+          <div className="flex items-start sm:items-center justify-between gap-2">
+            <div className="flex items-center gap-2.5 min-w-0">
               <div className="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
                 <Trophy className="w-4 h-4" />
               </div>
-              <div>
-                <h2 className="font-display text-2xl font-bold tracking-tight text-foreground">
+              <div className="min-w-0">
+                <h2 className="font-display text-xl sm:text-2xl font-bold tracking-tight text-foreground truncate">
                   New competition
                 </h2>
-                <p className="text-xs text-muted-foreground mt-0.5">
+                <p className="text-xs text-muted-foreground mt-0.5 truncate">
                   Isolated event workspace · Step {step} of 3
                 </p>
               </div>
@@ -133,7 +133,7 @@ export const TournamentModal: React.FC<TournamentModalProps> = ({
               onClick={onClose}
               title="Close New competition drawer"
               aria-label="Close drawer"
-              className="inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground px-2 py-1 rounded-md hover:bg-muted transition-colors"
+              className="inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground px-2 py-1 rounded-md hover:bg-muted transition-colors shrink-0"
             >
               <span>Close</span>
               <X className="h-4 w-4" />
@@ -141,12 +141,12 @@ export const TournamentModal: React.FC<TournamentModalProps> = ({
           </div>
 
           {/* Step Switcher Tabs matching One athlete / Quick Grid tabs */}
-          <div className="flex items-center gap-2 mt-3.5">
+          <div className="flex items-center gap-1.5 sm:gap-2 mt-3.5 overflow-x-auto thin-scrollbar">
             <button
               type="button"
               onClick={() => setStep(1)}
               title="Step 1: Competition name, date, and venue"
-              className={`px-3.5 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+              className={`flex-1 sm:flex-initial text-center whitespace-nowrap px-2.5 sm:px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-medium transition-colors ${
                 step === 1
                   ? "bg-primary text-primary-foreground shadow-sm"
                   : "border border-border bg-card text-foreground hover:bg-muted"
@@ -159,7 +159,7 @@ export const TournamentModal: React.FC<TournamentModalProps> = ({
               disabled={!canAdvance}
               onClick={() => canAdvance && setStep(2)}
               title="Step 2: Choose competition classification rule profile"
-              className={`px-3.5 py-1.5 rounded-lg text-sm font-medium transition-colors disabled:opacity-45 disabled:cursor-not-allowed ${
+              className={`flex-1 sm:flex-initial text-center whitespace-nowrap px-2.5 sm:px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-medium transition-colors disabled:opacity-45 disabled:cursor-not-allowed ${
                 step === 2
                   ? "bg-primary text-primary-foreground shadow-sm"
                   : "border border-border bg-card text-foreground hover:bg-muted"
@@ -172,7 +172,7 @@ export const TournamentModal: React.FC<TournamentModalProps> = ({
               disabled={!canAdvance}
               onClick={() => canAdvance && setStep(3)}
               title="Step 3: Review and launch isolated competition workspace"
-              className={`px-3.5 py-1.5 rounded-lg text-sm font-medium transition-colors disabled:opacity-45 disabled:cursor-not-allowed ${
+              className={`flex-1 sm:flex-initial text-center whitespace-nowrap px-2.5 sm:px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-medium transition-colors disabled:opacity-45 disabled:cursor-not-allowed ${
                 step === 3
                   ? "bg-primary text-primary-foreground shadow-sm"
                   : "border border-border bg-card text-foreground hover:bg-muted"
@@ -184,7 +184,7 @@ export const TournamentModal: React.FC<TournamentModalProps> = ({
         </div>
 
         {/* 2. Scrollable Drawer Body */}
-        <div className="flex-1 overflow-y-auto px-6 py-5 space-y-4">
+        <div className="flex-1 overflow-y-auto thin-scrollbar px-4 sm:px-6 py-4 sm:py-5 space-y-4">
           {step === 1 && (
             <>
               <div>
@@ -322,19 +322,19 @@ export const TournamentModal: React.FC<TournamentModalProps> = ({
               </div>
 
               <div className="p-4 rounded-xl bg-muted/35 border border-border space-y-2.5 text-xs">
-                <div className="flex justify-between py-1 border-b border-border/70">
-                  <span className="text-muted-foreground">Rule profile:</span>
-                  <span className="font-semibold text-primary">
+                <div className="flex justify-between gap-3 py-1 border-b border-border/70">
+                  <span className="text-muted-foreground shrink-0">Rule profile:</span>
+                  <span className="font-semibold text-primary text-right">
                     {ruleProfile === "tourn2026" ? "2026 Championship Spec" : "World Taekwondo Spec"}
                   </span>
                 </div>
-                <div className="flex justify-between py-1 border-b border-border/70">
-                  <span className="text-muted-foreground">Discipline:</span>
-                  <span className="font-semibold text-foreground">{discipline}</span>
+                <div className="flex justify-between gap-3 py-1 border-b border-border/70">
+                  <span className="text-muted-foreground shrink-0">Discipline:</span>
+                  <span className="font-semibold text-foreground text-right">{discipline}</span>
                 </div>
-                <div className="flex justify-between py-1">
-                  <span className="text-muted-foreground">Initial roster:</span>
-                  <span className="font-semibold text-emerald-600 dark:text-emerald-400">
+                <div className="flex justify-between gap-3 py-1">
+                  <span className="text-muted-foreground shrink-0">Initial roster:</span>
+                  <span className="font-semibold text-emerald-600 dark:text-emerald-400 text-right">
                     Clean Empty Roster (Isolated)
                   </span>
                 </div>
@@ -348,7 +348,7 @@ export const TournamentModal: React.FC<TournamentModalProps> = ({
         </div>
 
         {/* 3. Pinned Drawer Footer */}
-        <div className="px-6 py-4 border-t border-border bg-card flex items-center justify-between gap-2.5 shrink-0">
+        <div className="px-4 sm:px-6 py-3.5 sm:py-4 border-t border-border bg-card flex items-center justify-between gap-2.5 shrink-0">
           {step === 1 ? (
             <button
               type="button"
