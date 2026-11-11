@@ -37,32 +37,76 @@ export const Navbar: React.FC<NavbarProps> = ({
   pendingWeighInCount,
 }) => {
   return (
-    <header className="bg-card border-b border-border sticky top-0 z-40 transition-colors shadow-xs">
+    <header className="bg-card/95 backdrop-blur border-b border-border sticky top-0 z-40 transition-colors">
       <div className="max-w-[1400px] mx-auto px-4 sm:px-6">
-        {/* Top Header Row */}
-        <div className="flex items-center justify-between h-14 border-b border-border/60 gap-3">
-          {/* Logo & Product Title */}
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-md bg-primary text-primary-foreground flex items-center justify-center font-display font-bold text-sm tracking-wide shadow-xs">
-              TKD
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="font-display font-bold text-lg uppercase tracking-wide text-foreground">
-                  Bracket HQ
-                </span>
-                <span className="text-xs text-muted-foreground hidden sm:inline">
-                  — Athlete Categorization
-                </span>
+        {/* Main Header Row */}
+        <div className="flex items-center justify-between h-14 gap-3">
+          {/* Logo, Title & Inline Navigation Tabs */}
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2.5 shrink-0">
+              <div className="w-8 h-8 rounded-lg bg-primary text-primary-foreground flex items-center justify-center font-display font-bold text-sm tracking-wide shadow-xs">
+                TKD
               </div>
+              <span className="font-display font-bold text-lg uppercase tracking-wide text-foreground">
+                Bracket HQ
+              </span>
             </div>
+
+            <div className="hidden md:block h-5 w-px bg-border" />
+
+            {/* Clean Navigation Tabs (Desktop) */}
+            <nav className="hidden md:flex items-center gap-1">
+              <button
+                onClick={() => onSelectTab("athletes")}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                  currentTab === "athletes"
+                    ? "bg-muted text-foreground font-semibold shadow-xs"
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                }`}
+              >
+                <Users className="w-4 h-4" />
+                <span>Athletes</span>
+                <span className="ml-0.5 text-xs tabular-nums text-muted-foreground">
+                  {totalAthletesCount}
+                </span>
+              </button>
+
+              <button
+                onClick={() => onSelectTab("weighin")}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                  currentTab === "weighin"
+                    ? "bg-muted text-foreground font-semibold shadow-xs"
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                }`}
+              >
+                <Scale className="w-4 h-4" />
+                <span>Weigh-In</span>
+                {pendingWeighInCount > 0 && (
+                  <span className="ml-0.5 px-1.5 py-0.2 rounded-full text-[11px] font-semibold bg-warning/15 text-warning tabular-nums">
+                    {pendingWeighInCount}
+                  </span>
+                )}
+              </button>
+
+              <button
+                onClick={() => onSelectTab("reports")}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                  currentTab === "reports"
+                    ? "bg-muted text-foreground font-semibold shadow-xs"
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                }`}
+              >
+                <FileText className="w-4 h-4" />
+                <span>Reports</span>
+              </button>
+            </nav>
           </div>
 
-          {/* Event Selector & Actions */}
+          {/* Right Controls: Event Selector, Status, Rules, Theme */}
           <div className="flex items-center gap-2">
             {/* Active Tournament Selector */}
-            <div className="flex items-center gap-1.5 bg-muted rounded-md px-2.5 py-1 text-xs font-medium border border-input">
-              <Calendar className="w-3.5 h-3.5 text-primary shrink-0" />
+            <div className="flex items-center gap-1.5 bg-muted/60 rounded-lg px-2.5 py-1.5 text-xs font-medium border border-border">
+              <Calendar className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
               <select
                 aria-label="Select Active Tournament Event"
                 value={currentEvent?.id || ""}
@@ -70,7 +114,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   const ev = events.find((item) => item.id === Number(e.target.value));
                   if (ev) onSelectEvent(ev);
                 }}
-                className="bg-transparent text-foreground text-xs font-semibold focus:outline-none max-w-[140px] sm:max-w-[220px] truncate cursor-pointer"
+                className="bg-transparent text-foreground text-xs font-medium focus:outline-none max-w-[130px] sm:max-w-[200px] truncate cursor-pointer"
               >
                 {events.map((ev) => (
                   <option key={ev.id} value={ev.id} className="bg-card text-foreground">
@@ -87,101 +131,62 @@ export const Navbar: React.FC<NavbarProps> = ({
               </button>
             </div>
 
-            {/* Connection Indicator */}
-            <div
-              title={isBackendOnline ? "Connected to FastAPI Backend" : "Operating in Offline Client Mode"}
-              className={`flex items-center gap-1.5 px-2 py-1 rounded text-xs font-medium border ${
-                isBackendOnline
-                  ? "bg-success/10 text-success border-success/30"
-                  : "bg-warning/10 text-warning border-warning/30"
-              }`}
-            >
-              <span
-                className={`w-1.5 h-1.5 rounded-full ${
-                  isBackendOnline ? "bg-success animate-pulse" : "bg-warning"
-                }`}
-              />
-              <span className="hidden md:inline font-semibold">
-                {isBackendOnline ? "Online" : "Offline"}
-              </span>
-            </div>
-
             {/* Rules / Settings */}
             <button
               onClick={onOpenRules}
               title="Tournament Rules & Brackets Configuration"
-              className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-colors border border-input"
+              className="h-8 px-2.5 text-muted-foreground hover:text-foreground hover:bg-muted/60 rounded-lg transition-colors border border-border flex items-center gap-1.5 text-xs font-medium"
             >
-              <Settings className="w-4 h-4" />
+              <Settings className="w-3.5 h-3.5" />
+              <span className="hidden lg:inline">Rules</span>
             </button>
 
             {/* Light / Dark Mode Toggle */}
             <button
               onClick={onToggleTheme}
               title={darkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
-              className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-colors border border-input"
+              className="h-8 w-8 flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/60 rounded-lg transition-colors border border-border"
             >
-              {darkMode ? <Sun className="w-4 h-4 text-warning" /> : <Moon className="w-4 h-4 text-primary" />}
+              {darkMode ? <Sun className="w-4 h-4 text-warning" /> : <Moon className="w-4 h-4" />}
             </button>
           </div>
         </div>
 
-        {/* Operational Navigation Tabs */}
-        <nav className="flex items-center space-x-1 py-1.5">
-          {/* Tab 1: Athletes */}
+        {/* Mobile Navigation Tabs */}
+        <nav className="flex md:hidden items-center gap-1 py-1.5 border-t border-border/60">
           <button
             onClick={() => onSelectTab("athletes")}
-            className={`flex items-center gap-2 px-3 py-1.5 rounded-md font-display text-sm font-semibold uppercase tracking-wide transition-colors ${
+            className={`flex-1 flex items-center justify-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors ${
               currentTab === "athletes"
-                ? "bg-primary text-primary-foreground shadow-xs"
-                : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                ? "bg-muted text-foreground font-semibold"
+                : "text-muted-foreground hover:text-foreground"
             }`}
           >
-            <Users className="w-4 h-4" />
-            <span>Athletes</span>
-            <span
-              className={`ml-1 text-xs tabular-nums opacity-80 ${
-                currentTab === "athletes" ? "text-primary-foreground" : "text-muted-foreground"
-              }`}
-            >
-              ({totalAthletesCount})
-            </span>
+            <Users className="w-3.5 h-3.5" />
+            <span>Athletes ({totalAthletesCount})</span>
           </button>
 
-          {/* Tab 2: Weigh-In */}
           <button
             onClick={() => onSelectTab("weighin")}
-            className={`flex items-center gap-2 px-3 py-1.5 rounded-md font-display text-sm font-semibold uppercase tracking-wide transition-colors ${
+            className={`flex-1 flex items-center justify-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors ${
               currentTab === "weighin"
-                ? "bg-primary text-primary-foreground shadow-xs"
-                : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                ? "bg-muted text-foreground font-semibold"
+                : "text-muted-foreground hover:text-foreground"
             }`}
           >
-            <Scale className="w-4 h-4" />
-            <span>Weigh-In</span>
-            {pendingWeighInCount > 0 && (
-              <span
-                className={`ml-1 px-1.5 py-0.2 rounded-full text-[10px] font-bold ${
-                  currentTab === "weighin"
-                    ? "bg-primary-foreground text-primary"
-                    : "bg-warning/20 text-warning"
-                }`}
-              >
-                {pendingWeighInCount}
-              </span>
-            )}
+            <Scale className="w-3.5 h-3.5" />
+            <span>Weigh-In {pendingWeighInCount > 0 ? `(${pendingWeighInCount})` : ""}</span>
           </button>
 
-          {/* Tab 3: Reports */}
           <button
             onClick={() => onSelectTab("reports")}
-            className={`flex items-center gap-2 px-3 py-1.5 rounded-md font-display text-sm font-semibold uppercase tracking-wide transition-colors ${
+            className={`flex-1 flex items-center justify-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors ${
               currentTab === "reports"
-                ? "bg-primary text-primary-foreground shadow-xs"
-                : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                ? "bg-muted text-foreground font-semibold"
+                : "text-muted-foreground hover:text-foreground"
             }`}
           >
-            <FileText className="w-4 h-4" />
+            <FileText className="w-3.5 h-3.5" />
             <span>Reports</span>
           </button>
         </nav>

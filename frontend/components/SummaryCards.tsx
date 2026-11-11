@@ -34,13 +34,13 @@ function ProgressBar({
   return (
     <div>
       <div className="flex justify-between text-xs">
-        <span className="font-medium text-foreground">{label}</span>
+        <span className="font-medium text-muted-foreground">{label}</span>
         <span className="tabular-nums text-muted-foreground">
           {n} · {percent.toFixed(0)}%
         </span>
       </div>
-      <div className="mt-0.5 h-1.5 overflow-hidden rounded bg-muted">
-        <div className={`h-full transition-all ${cls}`} style={{ width: `${percent}%` }} />
+      <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-muted">
+        <div className={`h-full rounded-full transition-all ${cls}`} style={{ width: `${percent}%` }} />
       </div>
     </div>
   );
@@ -91,29 +91,27 @@ export const SummaryCards: React.FC<SummaryCardsProps> = ({
   }, [athletes]);
 
   return (
-    <div className="grid gap-3 md:grid-cols-[1.3fr_repeat(4,1fr)] print:hidden">
+    <div className="grid gap-3.5 md:grid-cols-[1.35fr_repeat(4,1fr)] print:hidden">
       {/* 1. Total Athletes Card */}
       <div
         onClick={() => onSelectAgeGroup("All")}
-        className={`rounded-lg border bg-card p-4 transition-all cursor-pointer ${
-          selectedAgeGroup === "All"
-            ? "border-primary ring-1 ring-primary/40 shadow-sm"
-            : "border-border hover:border-border/80"
-        }`}
+        className="rounded-xl border border-border bg-card p-5 shadow-xs hover:border-border/80 transition-all cursor-pointer flex flex-col justify-between"
       >
-        <div className="flex items-center gap-2 text-xs uppercase tracking-wider text-muted-foreground font-semibold">
-          <Users className="h-3.5 w-3.5 text-primary" />
-          <span>Total athletes</span>
+        <div>
+          <div className="flex items-center gap-2 text-xs uppercase tracking-wider text-muted-foreground font-medium">
+            <Users className="h-3.5 w-3.5 text-muted-foreground" />
+            <span>Total athletes</span>
+          </div>
+          <div className="mt-2 font-display text-[42px] font-bold leading-none tabular-nums text-foreground">
+            {total.toLocaleString()}
+          </div>
         </div>
-        <div className="mt-1 font-display text-5xl font-bold tabular-nums text-foreground">
-          {total.toLocaleString()}
-        </div>
-        <div className="mt-3 space-y-1.5">
+        <div className="mt-4 space-y-2">
           <ProgressBar label="Male" n={stats.maleCount} total={total} cls="bg-male" />
           <ProgressBar label="Female" n={stats.femaleCount} total={total} cls="bg-female" />
         </div>
         {(stats.flaggedCount > 0 || stats.unknownCount > 0) && (
-          <div className="mt-2 text-xs font-semibold text-warning">
+          <div className="mt-2.5 text-xs font-semibold text-warning">
             {stats.flaggedCount} flagged · {stats.unknownCount} uncategorized
           </div>
         )}
@@ -130,40 +128,46 @@ export const SummaryCards: React.FC<SummaryCardsProps> = ({
           <div
             key={div}
             onClick={() => onSelectAgeGroup(isSelected ? "All" : div)}
-            className={`relative overflow-hidden rounded-lg border bg-card p-4 transition-all cursor-pointer ${
+            className={`relative overflow-hidden rounded-xl border bg-card p-5 shadow-xs transition-all cursor-pointer flex flex-col justify-between ${
               isSelected
-                ? "border-primary ring-1 ring-primary/40 shadow-sm"
+                ? "border-primary ring-1 ring-primary/40"
                 : "border-border hover:border-border/80"
             }`}
           >
             {/* Top accent bar */}
             <div className={`absolute inset-x-0 top-0 h-1 ${DIVISION_COLORS[div]}`} />
 
-            <div className="font-display text-sm font-semibold uppercase tracking-wider text-muted-foreground flex items-center justify-between">
-              <span>{div === "Sub-Jr" ? "Sub-Junior" : div}</span>
-              {isSelected && (
-                <span className="text-[10px] font-bold text-primary uppercase">Filtered</span>
-              )}
+            <div>
+              <div className="font-display text-sm font-semibold uppercase tracking-wider text-muted-foreground flex items-center justify-between">
+                <span>{div === "Sub-Jr" ? "Sub-Junior" : div}</span>
+                {isSelected && (
+                  <span className="text-[10px] font-bold text-primary uppercase">Filtered</span>
+                )}
+              </div>
+
+              <div className="mt-2 font-display text-[38px] font-bold leading-none tabular-nums text-foreground">
+                {divTotal}
+              </div>
             </div>
 
-            <div className="mt-1 font-display text-4xl font-bold tabular-nums text-foreground">
-              {divTotal}
-            </div>
+            <div className="mt-4">
+              <div className="flex gap-3 text-xs text-muted-foreground font-medium">
+                <span className="flex items-center gap-1">
+                  <span className="text-male text-[10px]">●</span>
+                  <span>{counts.M} M</span>
+                </span>
+                <span className="flex items-center gap-1">
+                  <span className="text-female text-[10px]">●</span>
+                  <span>{counts.F} F</span>
+                </span>
+              </div>
 
-            <div className="mt-2 flex gap-3 text-xs text-muted-foreground font-medium">
-              <span>
-                <span className="text-male font-black">●</span> {counts.M} M
-              </span>
-              <span>
-                <span className="text-female font-black">●</span> {counts.F} F
-              </span>
-            </div>
-
-            <div className="mt-2 h-1.5 overflow-hidden rounded bg-muted">
-              <div
-                className={`h-full transition-all ${DIVISION_COLORS[div]}`}
-                style={{ width: `${percent}%` }}
-              />
+              <div className="mt-2.5 h-1.5 overflow-hidden rounded-full bg-muted">
+                <div
+                  className={`h-full rounded-full transition-all ${DIVISION_COLORS[div]}`}
+                  style={{ width: `${percent}%` }}
+                />
+              </div>
             </div>
           </div>
         );

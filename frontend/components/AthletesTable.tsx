@@ -115,11 +115,11 @@ export const AthletesTable: React.FC<AthletesTableProps> = ({
   };
 
   return (
-    <div className="rounded-lg border border-border bg-card print:hidden">
+    <div className="rounded-xl border border-border bg-card shadow-xs print:hidden">
       {/* 1. Header Toolbar: Division Tabs & Search */}
-      <div className="flex flex-wrap items-center gap-3 border-b border-border p-3">
+      <div className="flex flex-wrap items-center gap-3 border-b border-border p-3.5">
         {/* Division Filter Tabs */}
-        <div className="flex gap-1 rounded-md bg-muted p-1">
+        <div className="flex gap-1 rounded-lg bg-muted/80 p-1">
           {DIVISIONS.map((div) => {
             const isActive = filterAge === div;
             return (
@@ -129,14 +129,14 @@ export const AthletesTable: React.FC<AthletesTableProps> = ({
                   setFilterAge(div);
                   setCurrentPage(0);
                 }}
-                className={`rounded px-3 py-1 font-display text-sm font-semibold uppercase tracking-wide transition-colors ${
+                className={`rounded-md px-3 py-1 text-xs font-semibold transition-all flex items-center gap-1.5 ${
                   isActive
-                    ? "bg-primary text-primary-foreground shadow-xs"
+                    ? "bg-card text-foreground shadow-xs"
                     : "text-muted-foreground hover:text-foreground"
                 }`}
               >
-                {div}
-                <span className="ml-1 text-xs opacity-70">
+                <span>{div}</span>
+                <span className="text-[11px] tabular-nums opacity-70">
                   {divisionCounts[div] ?? 0}
                 </span>
               </button>

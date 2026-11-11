@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import {
-  Users, Scale, FileText, UserPlus, Upload, Download, Sparkles,
+  Users, Scale, FileText, UserPlus, FileUp, Camera, Eraser, Download, Sparkles,
   RefreshCw, Trash2, AlertTriangle, Shield, Printer, CheckCircle2,
   Calendar, Layers, Plus, Database, ChevronDown
 } from "lucide-react";
@@ -134,9 +134,9 @@ export default function HomePage() {
     } else {
       const fallbackEvent: TournamentEvent = {
         id: 1,
-        name: "State Taekwondo Championship 2026",
-        event_date: "2026-10-24",
-        location: "State Sports Complex Indoor Stadium"
+        name: "Local Tournament",
+        event_date: "2026-12-31",
+        location: "Offline"
       };
       setEvents([fallbackEvent]);
       setCurrentEvent(fallbackEvent);
@@ -331,77 +331,90 @@ export default function HomePage() {
       )}
 
       {/* 3. Main Workspace Container */}
-      <main className="flex-1 max-w-[1400px] w-full mx-auto px-4 py-5 space-y-4 print:hidden">
+      <main className="flex-1 max-w-[1400px] w-full mx-auto px-4 sm:px-6 py-6 space-y-5 print:hidden">
         {/* TAB 1: ATHLETES ROSTER WORKSPACE */}
         {currentTab === "athletes" && (
-          <div className="space-y-4">
-            {/* Operational Action Bar (Lovable Layout) */}
-            <div className="flex flex-wrap items-end justify-between gap-3">
+          <div className="space-y-5">
+            {/* Operational Header & Action Row (Exact Screenshot Layout) */}
+            <div className="space-y-4">
               <div>
-                <div className="text-xs uppercase tracking-[0.2em] text-primary font-bold">
-                  {currentEvent?.location || "Tournament Venue"} · {currentEvent?.event_date || "2026-10-24"}
+                <div className="text-[11px] uppercase tracking-[0.15em] text-muted-foreground font-mono font-medium flex items-center gap-1.5">
+                  <span>{isBackendOnline ? "ONLINE" : "OFFLINE"}</span>
+                  <span>·</span>
+                  <span>{currentEvent?.event_date || "2026-12-31"}</span>
                 </div>
-                <h1 className="font-display text-3xl font-bold uppercase tracking-wide text-foreground">
-                  {currentEvent?.name || "State Taekwondo Championship 2026"}
+                <h1 className="font-display text-3xl sm:text-[36px] font-bold uppercase tracking-tight leading-none text-foreground mt-1.5">
+                  {currentEvent?.name || "LOCAL TOURNAMENT"}
                 </h1>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-sm text-muted-foreground mt-1.5">
                   Manage registrations and verify tournament categories.
                 </p>
               </div>
 
               <div className="flex flex-wrap items-center gap-2">
-                {/* Primary Action: Add Athletes */}
+                {/* 1. Primary Action: Add athletes */}
                 <button
                   onClick={() => setShowManualModal(true)}
-                  className="h-9 px-4 rounded-md bg-primary text-primary-foreground font-display text-sm font-bold uppercase tracking-wide hover:bg-primary/90 flex items-center gap-1.5 transition-colors shadow-xs"
+                  className="h-9 px-4 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 flex items-center gap-2 transition-colors shadow-xs"
                 >
                   <UserPlus className="h-4 w-4" />
                   <span>Add athletes</span>
                 </button>
 
-                {/* Secondary Action: Import File */}
+                {/* 2. Secondary Action: Import file */}
                 <button
                   onClick={() => setShowExcelModal(true)}
-                  className="h-9 px-3 rounded-md border border-input bg-background hover:bg-muted font-medium text-foreground text-sm flex items-center gap-1.5 transition-colors"
+                  className="h-9 px-3.5 rounded-lg border border-border bg-card hover:bg-muted text-sm font-medium text-foreground flex items-center gap-2 transition-colors shadow-xs"
                 >
-                  <Upload className="h-4 w-4 text-primary" />
+                  <FileUp className="h-4 w-4 text-muted-foreground" />
                   <span>Import file</span>
                 </button>
 
-                {/* Weigh-in Sheet Printable */}
+                {/* 3. Scan form (Disabled - keeping visual slot, OCR disabled) */}
+                <button
+                  type="button"
+                  disabled
+                  title="Scan form is currently disabled"
+                  className="h-9 px-3.5 rounded-lg border border-border bg-card text-sm font-medium text-muted-foreground/70 flex items-center gap-2 shadow-xs opacity-60 cursor-not-allowed"
+                >
+                  <Camera className="h-4 w-4" />
+                  <span>Scan form</span>
+                </button>
+
+                {/* 4. Weigh-in sheet */}
                 <button
                   onClick={() => setShowPrintModal(true)}
                   disabled={!athletes.length}
-                  className="h-9 px-3 rounded-md border border-input bg-background hover:bg-muted font-medium text-foreground text-sm flex items-center gap-1.5 transition-colors disabled:opacity-50"
+                  className="h-9 px-3.5 rounded-lg border border-border bg-card hover:bg-muted text-sm font-medium text-foreground flex items-center gap-2 transition-colors shadow-xs disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <Printer className="h-4 w-4 text-primary" />
+                  <Printer className="h-4 w-4 text-muted-foreground" />
                   <span>Weigh-in sheet</span>
                 </button>
 
-                {/* Clear Roster */}
+                {/* 5. Clear */}
                 <button
                   onClick={handleClearRoster}
                   disabled={!athletes.length}
-                  className="h-9 px-3 rounded-md text-muted-foreground hover:text-destructive hover:bg-muted font-medium text-sm flex items-center gap-1.5 transition-colors disabled:opacity-50"
+                  className="h-9 px-3 rounded-lg text-sm font-medium text-muted-foreground hover:text-destructive hover:bg-muted/60 flex items-center gap-1.5 transition-colors disabled:opacity-45 disabled:cursor-not-allowed"
                 >
-                  <Trash2 className="h-4 w-4" />
+                  <Eraser className="h-4 w-4" />
                   <span>Clear</span>
                 </button>
 
-                {/* More Actions Dropdown */}
-                <div className="relative">
+                {/* Subtle More Actions Dropdown */}
+                <div className="relative ml-auto">
                   <button
                     onClick={() => setShowActionsDropdown(!showActionsDropdown)}
-                    className="h-9 px-3 rounded-md border border-input bg-background hover:bg-muted font-medium text-foreground text-sm flex items-center gap-1.5 transition-colors"
+                    className="h-9 px-3 rounded-lg border border-border bg-card hover:bg-muted text-xs font-medium text-muted-foreground hover:text-foreground flex items-center gap-1.5 transition-colors shadow-xs"
                   >
-                    <span>More</span>
+                    <span>Tools</span>
                     <ChevronDown className="h-3.5 w-3.5" />
                   </button>
 
                   {showActionsDropdown && (
                     <div
                       onClick={() => setShowActionsDropdown(false)}
-                      className="absolute right-0 mt-1 w-56 rounded-md border border-border bg-popover text-popover-foreground shadow-lg py-1 z-30 text-xs font-semibold"
+                      className="absolute right-0 mt-1 w-56 rounded-lg border border-border bg-popover text-popover-foreground shadow-lg py-1 z-30 text-xs font-medium"
                     >
                       <button
                         onClick={() => handleLoadDemo()}
